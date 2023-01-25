@@ -1,0 +1,171 @@
+syntax = "proto3";
+
+option go_package = "./;protos";
+package message;
+// import "user.proto";
+// import "contact.proto";
+// import "group.proto";
+
+message ChatDialogue {
+  // type Group/Contact
+  string type = 1;
+  string lastMessageId = 2;
+  int64 lastMessageTime = 3;
+  // groupId/UserId
+  string id = 4;
+  int64 unreadMessageCount = 5;
+  string roomId = 6;
+  Messages lastMessage = 7;
+}
+
+message MessagesAudio {
+  int64 time = 1;
+  string url = 2;
+}
+message MessagesVideo {
+  int64 time = 1;
+  string url = 2;
+}
+message MessagesImage { string url = 1; }
+
+message MessagesCall {
+  message MessagesCallParticipants { string uid = 1; }
+  // Status:
+  // 1 connected successfully
+  // 0 calling
+  // -1 Missing call
+  // -2 Other devices calling
+  // -3 Invite to join the call
+  int64 status = 1;
+  string roomId = 2;
+  repeated MessagesCallParticipants participants = 3;
+  // Type: Audio Video ScreenShare
+  string type = 4;
+  int64 time = 5;
+}
+
+message Messages {
+  string id = 1;
+  // RoomId md5(appId+groupId/appId+authorId+friendId)
+  string roomId = 2;
+  string authorId = 3;
+  string replyId = 4;
+  repeated string atUserIds = 5;
+  repeated string readUserIds = 6;
+  // 转发一堆聊天记录、（预留）
+  repeated string forwardChatIds = 7;
+  string message = 8;
+  MessagesAudio audio = 9;
+  MessagesVideo video = 10;
+  MessagesImage image = 11;
+  MessagesCall call = 12;
+  int64 createTime = 13;
+  // 预留限时消息
+  int64 deadlineTime = 14;
+  int64 recallTime = 15;
+}
+
+message GetRecentChatDialogueList {
+  message Request {}
+  message Response {
+    repeated ChatDialogue list = 1;
+    int64 total = 2;
+  }
+}
+
+message JoinRoom {
+  message Request {
+    // RoomId md5(appId+groupId/appId+authorId+friendId)
+    repeated string roomIds = 1;
+  }
+  message Response {
+    // string roomId = 1;
+    // int64 authorId = 2;
+    // int64 anonymousUID = 3;
+    // int64 totalUser = 4;
+    // repeated user.RoomUserInfo list = 5;
+  }
+}
+
+message LeaveRoom {
+  message Request {
+    // RoomId md5(appId+groupId/appId+authorId+friendId)
+    repeated string roomIds = 1;
+  }
+  message Response {}
+}
+
+// 预留
+message GetAllUnreadMessage {
+  message Request {}
+  message Response {
+    message UnreadMessageCountItem {
+      // string id = 1;
+      // string type = 2;
+      // int64 count = 3;
+      // ChatRecordItem lastMessage = 4;
+    }
+    repeated UnreadMessageCountItem list = 1;
+    int64 total = 2;
+  }
+}
+
+// socketio api
+message SendMessage {
+  message Request {
+    // RoomId md5(appId+groupId/appId+authorId+friendId)
+    string roomId = 2;
+    string authorId = 3;
+    string replyId = 4;
+    repeated int64 atUserIds = 5;
+    repeated int64 readUserIds = 6;
+    // 转发一堆聊天记录、（预留）
+    repeated string forwardChatIds = 7;
+    string message = 8;
+    MessagesAudio audio = 9;
+    MessagesVideo video = 10;
+    MessagesImage image = 11;
+    MessagesCall call = 12;
+    // type Group/Contact
+    string type = 13;
+  }
+  message Response { Messages message = 1; }
+}
+
+// 需要检测是否本人是否在这个room里
+message GetHistoricalMessages {
+  message Request {
+    string roomId = 1;
+    int64 pageNum = 3;
+    int64 pageSize = 4;
+    // 项1开始时间。项2结束
+    message TimeRange {
+      int64 start = 1;
+      int64 end = 2;
+    }
+    TimeRange timeRange = 5;
+    // type Group/Contact
+    string type = 6;
+
+    // （预留）Unread / All
+    // string type = 6;
+  }
+  message Response {
+    repeated Messages list = 1;
+    int64 total = 2;
+  }
+}
+
+message ReadMessageItem {
+  string id = 1;
+  repeated int64 readUserIds = 6;
+}
+
+// 需要检测是否本人是否在这个room里
+message ReadAllMessages {
+  message Request { string roomId = 1; }
+  message Response {
+    string roomId = 1;
+    string uid = 2;
+  }
+}

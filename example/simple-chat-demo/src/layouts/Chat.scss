@@ -1,0 +1,42 @@
+.chat-layout {
+	width: 100%;
+	height: 100%;
+
+	.cl-connection-error {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background-color: rgb(243, 243, 243);
+		height: 40px;
+		span {
+			color: #555;
+			transform: translateY(-2px);
+		}
+	}
+	.cl-main {
+		width: 100%;
+		height: calc(100% - 50px);
+
+		saki-chat-layout {
+			width: 100%;
+			height: 100%;
+		}
+		.cl-side-navigator {
+			height: 100%;
+			saki-chat-layout-side-navigator {
+				height: 100%;
+			}
+		}
+		.cl-m-main {
+			width: 100%;
+			height: 100%;
+
+			.cl-m-m-login {
+				position: absolute;
+				left: 50%;
+				top: 50%;
+				transform: translate(-50%, -50%);
+			}
+		}
+	}
+}
