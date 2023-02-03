@@ -237,7 +237,7 @@ func New(config sfu.Config, option NewOptions) {
 			"uid":    customData.Uid,
 			"roomId": customData.RoomId,
 			"token":  token,
-		}).Post("http://192.168.1.104:15310/api/v1/call/token/verify")
+		}).Post(option.MeowWhisperCore.Url + "/api/v1/call/token/verify")
 		if err != nil {
 			nlogger.Error(err)
 			return

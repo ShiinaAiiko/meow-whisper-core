@@ -32,7 +32,7 @@ import { meowWhisperCore } from '../config'
 
 let webrtc = {
 	// url: 'ws://192.168.1.104:15302/ws',
-  "url": "ws://sfu.aiiko.club/ws",
+  "url": "wss://sfu.aiiko.club/ws",
 	options: {
 		codec: 'vp8',
 		iceServers: [

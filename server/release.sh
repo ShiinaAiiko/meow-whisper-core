@@ -5,7 +5,7 @@ branch="main"
 # configFilePath="config.dev.json"
 configFilePath="config.pro.json"
 DIR=$(cd $(dirname $0) && pwd)
-allowMethods=("stop gitpull protos dockerremove start dockerlogs")
+allowMethods=("exec stop gitpull protos dockerremove start dockerlogs")
 
 gitpull() {
   echo "-> 正在拉取远程仓库"
@@ -40,6 +40,7 @@ start() {
   docker rm $name
   docker run \
     -v $DIR/$configFilePath:/config.json \
+    -v $DIR/certs:/certs \
     --name=$name \
     $(cat /etc/hosts | sed 's/^#.*//g' | grep '[0-9][0-9]' | tr "\t" " " | awk '{print "--add-host="$2":"$1 }' | tr '\n' ' ') \
     -p $port:$port \
@@ -64,6 +65,10 @@ protos() {
 
 dockerlogs() {
   docker logs -f $name
+}
+
+exec() {
+  docker exec -it $name /bin/sh
 }
 
 main() {

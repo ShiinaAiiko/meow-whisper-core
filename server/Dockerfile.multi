@@ -48,9 +48,8 @@ WORKDIR /
 
 COPY --from=BUILD_IMAGE \
   /app/meow-whisper \
-  /app/certs \
   /
-
+  
 EXPOSE 15310
 
 CMD ["./meow-whisper","--config","config.json"]
