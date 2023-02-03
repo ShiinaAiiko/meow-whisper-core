@@ -141,10 +141,10 @@ export const callSlice = createSlice({
 					color: '#fff',
 				}).open()
 				return
-      }
-      state.deviceStatus.audio = false
-      state.deviceStatus.video = false
-      state.deviceStatus.screenShare = false
+			}
+			state.deviceStatus.audio = false
+			state.deviceStatus.video = false
+			state.deviceStatus.screenShare = false
 
 			state.enable = true
 			state.modal.showSmallWindow = false
@@ -941,6 +941,7 @@ export const callMethods = {
 		if (
 			call.options.roomId &&
 			call.client?.streams &&
+			sendMessage &&
 			Object.keys(call.client?.streams).length
 		) {
 			// 发送消息

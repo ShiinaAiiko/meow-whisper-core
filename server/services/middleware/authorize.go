@@ -82,7 +82,7 @@ func Authorize() gin.HandlerFunc {
 					c.Abort()
 					return
 				}
-				// log.Info(c.GetString("appId"), conf.GetSSO(c.GetString("appId")))
+				log.Info(c.GetString("appId"), conf.GetSSO(c.GetString("appId")))
 				// Log.Info("token, deviceId, userAgent", token, deviceId, userAgent)
 				v, err := conf.GetSSO(c.GetString("appId")).AnonymousUser.VerifyUserToken(token, deviceId, userAgent)
 				// Log.Info("ret", ret, err)

@@ -1,12 +1,14 @@
 module github.com/ShiinaAiiko/meow-whisper-core/sfu-server
 
-go 1.17
+go 1.18
 
 require (
 	github.com/bep/debounce v1.2.0
+	github.com/cherrai/nyanyago-utils v1.0.0
 	github.com/cherrai/saki-sso-go v1.0.0
 	github.com/go-logr/logr v1.2.0
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/go-resty/resty/v2 v2.7.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/improbable-eng/grpc-web v0.14.1
@@ -22,22 +24,20 @@ require (
 	google.golang.org/grpc v1.41.0
 )
 
-replace (
-	github.com/cherrai/nyanyago-utils => ../../../nyanya/nyanyago-utils
-	github.com/cherrai/saki-sso-go v1.0.0 => ../../../cherrai/saki-sso/saki-sso-go
-)
+// replace (
+// 	github.com/cherrai/nyanyago-utils => ../../../nyanya/nyanyago-utils
+// 	github.com/cherrai/saki-sso-go v1.0.0 => ../../../cherrai/saki-sso/saki-sso-go
+// )
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/cherrai/nyanyago-utils v1.0.0 // indirect
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/gammazero/deque v0.1.0 // indirect
 	github.com/gammazero/workerpool v1.1.2 // indirect
 	github.com/go-logr/zerologr v1.2.0 // indirect
-	github.com/go-resty/resty/v2 v2.7.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect

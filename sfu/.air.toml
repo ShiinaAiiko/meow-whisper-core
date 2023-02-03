@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 
 [build]
   bin = "./tmp/main"
-  cmd = "go run ./main.go --config ./config.dev.ubuntu.json"
+  cmd = "go run ./main.go --config ./config.pro.json"
   delay = 2000
   exclude_dir = ["assets", "tmp", "vendor", "testdata"]
   exclude_file = []

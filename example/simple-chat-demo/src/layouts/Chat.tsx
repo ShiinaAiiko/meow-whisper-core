@@ -6,6 +6,7 @@ import {
 	useParams,
 	useSearchParams,
 } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import './Chat.scss'
 import { Header, Settings, Login } from '../components'
 import { useSelector, useStore, useDispatch } from 'react-redux'
@@ -80,7 +81,7 @@ const ChatLayout = ({ children }: RouterProps) => {
 		// store.dispatch(storageSlice.actions.init())
 	}, [])
 
-  useEffect(() => {
+	useEffect(() => {
 		const init = async () => {
 			if (user.isInit && user.isLogin) {
 				// console.log(mwc.sdk)
@@ -99,11 +100,7 @@ const ChatLayout = ({ children }: RouterProps) => {
 	}, [user.isInit, user.isLogin])
 
 	useEffect(() => {
-		console.log(
-			'开始获取 getCoantacts',
-			user.isLogin,
-			mwc.encryptionStatus
-		)
+		console.log('开始获取 getCoantacts', user.isLogin, mwc.encryptionStatus)
 		if (user.isLogin && mwc.encryptionStatus === 'success') {
 			dispatch(methods.messages.getRecentChatDialogueList())
 
@@ -161,6 +158,13 @@ const ChatLayout = ({ children }: RouterProps) => {
 
 	return (
 		<>
+			<Helmet>
+				<title>
+					{t('appTitle', {
+						ns: 'common',
+					})}
+				</title>
+			</Helmet>
 			<div className='chat-layout'>
 				<Login />
 				<>

@@ -1,6 +1,6 @@
 #! /bin/bash
-name="meow-whisper-web-server"
-port=15310
+name="meow-whisper-sfu-server"
+port=(15302 15303 3478)
 branch="main"
 allowMethods=("stop gitpull protos dockerremove start dockerlogs")
 
@@ -42,6 +42,7 @@ start() {
 
 stop() {
   docker stop $name
+  docker rm $name
 }
 
 protos() {

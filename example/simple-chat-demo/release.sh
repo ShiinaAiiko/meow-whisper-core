@@ -1,11 +1,10 @@
 #! /bin/bash
-appName="meow-sticky-note"
-name="${appName}-client"
-port=16111
+name="meow-whisper-web-client"
+port=15311
 version=1.0.1
 branch="main"
 # configFilePath="config.dev.json"
-webConfigFilePath="config.pro.web.json"
+webConfigFilePath="config.test.pro.json"
 electronConfigFilePath="config.pro.electron.json"
 registryUrl="https://registry.npmmirror.com/"
 DIR=$(cd $(dirname $0) && pwd)

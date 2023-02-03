@@ -36,7 +36,7 @@ RUN \
   npm config set registry https://registry.npmmirror.com && \
   yarn global add spa-http-server
 
-EXPOSE 16111
+EXPOSE 15311
 
-CMD ["http-server","./dist","--cors","--silent","-p","16111","--push-state"]
+CMD ["http-server","./dist","--cors","--silent","-p","15311","--push-state"]
 
