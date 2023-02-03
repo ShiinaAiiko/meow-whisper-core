@@ -48,6 +48,7 @@ WORKDIR /
 
 COPY --from=BUILD_IMAGE \
   /app/meow-whisper \
+  /app/certs \
   /
 
 EXPOSE 15310

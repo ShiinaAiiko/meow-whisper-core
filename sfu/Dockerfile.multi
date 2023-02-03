@@ -38,11 +38,11 @@ RUN \
 
 FROM alpine:3.10
 
-WORKDIR /app
+WORKDIR /
 
 COPY --from=BUILD_IMAGE \
   /app/meow-whisper-sfu \
-  /app/
+  /
 
 EXPOSE 15302 15303 3478
 

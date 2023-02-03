@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"io/ioutil"
+	"os"
+	"path"
 
 	"github.com/cherrai/nyanyago-utils/cipher"
 	"github.com/cherrai/nyanyago-utils/nlog"
@@ -58,23 +60,23 @@ func New(opt NewOption) *EncryptionOption {
 
 // RSA秘钥 永久有效、且公钥开放
 func (e *EncryptionOption) Init() {
-
+	pwd, _ := os.Getwd()
 	// A := cipher.DHKeaNew(1024)
 	// AKey := A.GetSharedKey(B.PublicKey)
 	// log.Info(A)
-	publicAesKeyContent, err := ioutil.ReadFile("./certs/publicAesKey.key")
+	publicAesKeyContent, err := ioutil.ReadFile(path.Join(pwd, "./certs/publicAesKey.key"))
 	if err != nil {
 		// fmt.Println(err)
 		log.Error(err)
 	}
 
-	privateKeyContent, err := ioutil.ReadFile("./certs/private.key")
+	privateKeyContent, err := ioutil.ReadFile(path.Join(pwd, "./certs/private.key"))
 	if err != nil {
 		// fmt.Println(err)
 		log.Error(err)
 	}
 
-	publicKeyContent, err := ioutil.ReadFile("./certs/public.pem")
+	publicKeyContent, err := ioutil.ReadFile(path.Join(pwd, "./certs/public.pem"))
 	if err != nil {
 		// fmt.Println(err)
 		log.Error(err)
