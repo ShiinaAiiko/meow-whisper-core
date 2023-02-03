@@ -1,4 +1,9 @@
-import store, { messagesSlice, methods } from '../../store'
+import store, {
+	callSlice,
+	messagesSlice,
+	methods,
+	toolsSlice,
+} from '../../store'
 import { protoRoot, socketio } from '../../protos'
 import socketApi from './api'
 import md5 from 'blueimp-md5'
@@ -12,6 +17,9 @@ import {
 } from '@nyanyajs/utils/dist/request'
 import { RSA, DiffieHellman, deepCopy } from '@nyanyajs/utils'
 import { room } from '../../protos/proto'
+import { snackbar } from '@saki-ui/core'
+import { callAlert, setCallAlert } from '../../store/call'
+import { getDialogueInfo } from '../methods'
 // import { e2eeDecryption } from './common'
 // import { getDialogRoomUsers } from '../../store/modules/chat/methods'
 
@@ -21,10 +29,10 @@ export const createSocketioRouter = {
 
 		mwc.sdk?.nsocketio.on<RouterType['router-receiveMessage']>(
 			'router-receiveMessage',
-			(v) => {
+			async (v) => {
 				console.log('router-receiveMessage', v)
 				if (v?.code === 200) {
-					const { mwc, messages } = store.getState()
+					const { mwc, messages, user, config } = store.getState()
 
 					const m = v.data.message
 					const roomId = v.data.message?.roomId
@@ -39,10 +47,19 @@ export const createSocketioRouter = {
 
 					const mv = messages.messagesMap[roomId]
 					console.log('mv', mv, roomId, deepCopy(messages.messagesMap))
+
+					if (!mv) {
+						store.dispatch(
+							messagesSlice.actions.initMessageMap({
+								roomId,
+								type: mwc.sdk?.methods.getType(roomId) as any,
+							})
+						)
+					}
 					store.dispatch(
 						messagesSlice.actions.setMessageMapList({
 							roomId,
-							list: mv.list.concat([
+							list: (mv?.list || []).concat([
 								{
 									...v.data.message,
 									status: 1,
@@ -50,10 +67,10 @@ export const createSocketioRouter = {
 							]),
 						})
 					)
-					store.dispatch(
+					await store.dispatch(
 						methods.messages.setChatDialogue({
 							roomId,
-							type: mwc.sdk?.methods.getRoomId(m?.roomId || 'G') as any,
+							type: mwc.sdk?.methods.getType(m?.roomId || 'G') as any,
 							id: m?.authorId || '',
 							showMessageContainer: true,
 							unreadMessageCount: -1,
@@ -62,6 +79,59 @@ export const createSocketioRouter = {
 							sort: Math.floor(new Date().getTime() / 1000),
 						})
 					)
+					// await store.dispatch(methods.messages.setActiveRoomIndex(0))
+
+					// console.log("messages.activeRoomInfo?.roomId === roomId",messages.activeRoomInfo?.roomId === roomId)
+					if (messages.activeRoomInfo?.roomId === roomId) {
+						store.dispatch(
+							methods.messages.readMessages({
+								roomId,
+							})
+						)
+					}
+
+					// 让用户选择通知级别
+					console.log(
+						'notification',
+						config.notification.leval === 1
+							? true
+							: config.notification.leval === 0
+							? !config.inApp
+							: false
+					)
+					if (
+						config.notification.leval === 1
+							? true
+							: config.notification.leval === 0
+							? !config.inApp
+							: false
+					) {
+						const dialog = messages.recentChatDialogueList.filter(
+							(v) => v.roomId === roomId
+						)?.[0]
+						const dialogInfo = getDialogueInfo(dialog)
+						const userInfo = mwc.cache?.userInfo?.get(m?.authorId || '')
+						console.log(21312, m, userInfo)
+						store.dispatch(
+							methods.tools.sendNotification({
+								title: dialogInfo.name,
+								body:
+									userInfo.userInfo?.nickname +
+									':' +
+									mwc?.sdk?.methods?.getLastMessage(
+										m,
+										m?.authorId === user.userInfo.uid
+									),
+								icon: dialogInfo.avatar || '',
+								sound:
+									config.notification.sound >= 0
+										? config.notification.sound === 0
+											? !config.inApp
+											: true
+										: false,
+							})
+						)
+					}
 				}
 			}
 		)
@@ -83,6 +153,7 @@ export const createSocketioRouter = {
 						methods.messages.setChatDialogue({
 							...dialog,
 							unreadMessageCount: 0,
+							sort: -1,
 						})
 					)
 					store.dispatch(
@@ -91,11 +162,90 @@ export const createSocketioRouter = {
 							list: mv.list.map((v) => {
 								return {
 									...v,
-									readUserIds: Array.from(
-										new Set(v.readUserIds?.concat([res.data.uid || '']))
-									),
+									readUsers:
+										v.authorId !== res.data.uid
+											? v.readUsers
+													?.filter((v) => {
+														return v.uid !== res.data.uid || ''
+													})
+													?.concat([
+														{
+															uid: res.data.uid || '',
+														},
+													])
+											: v.readUsers,
 								}
 							}),
+						})
+					)
+				}
+			}
+		)
+
+		mwc.sdk?.nsocketio.on<RouterType['router-startCallingMessage']>(
+			'router-startCallingMessage',
+			async (res) => {
+				console.log('router-startCallingMessage', res)
+				if (res?.code === 200) {
+					const { mwc, messages } = store.getState()
+					await store.dispatch(
+						methods.call.startCalling({
+							roomId: res.data.roomId || '',
+							callToken: res.data.callToken + '1' || '',
+							type: res.data.type as any,
+							participants: res.data.participants || [],
+						})
+					)
+				}
+			}
+		)
+
+		mwc.sdk?.nsocketio.on<RouterType['router-hangupMessage']>(
+			'router-hangupMessage',
+			async (res) => {
+				console.log('router-hangupMessage', res)
+				if (res?.code === 200) {
+					const { mwc, messages, user, call } = store.getState()
+
+					const authorId =
+						res.data?.participants?.filter((v) => {
+							return v.caller
+						})?.[0]?.uid || ''
+					callAlert?.close()
+					setCallAlert(undefined)
+					call.sound.stop()
+					if (authorId === user.userInfo.uid) {
+						if (
+							(res.data.status = 0) &&
+							call.options.roomId !== res.data.roomId
+						) {
+							snackbar({
+								message: '对方正在通话',
+								autoHideDuration: 2000,
+								vertical: 'top',
+								horizontal: 'center',
+								backgroundColor: 'var(--saki-default-color)',
+								color: '#fff',
+							}).open()
+						}
+					}
+					store.dispatch(methods.call.hangup(false))
+				}
+			}
+		)
+
+		mwc.sdk?.nsocketio.on<RouterType['router-deleteMessages']>(
+			'router-deleteMessages',
+			async (res) => {
+				console.log('router-deleteMessages', res)
+				if (res?.code === 200) {
+					const { mwc, messages, user, call } = store.getState()
+
+					store.dispatch(
+						methods.messages.deleteLocalMessages({
+							roomId: res.data.roomId || '',
+							messageIdList: res.data.messageIdList || [],
+							uid: res.data.uid || '',
 						})
 					)
 				}

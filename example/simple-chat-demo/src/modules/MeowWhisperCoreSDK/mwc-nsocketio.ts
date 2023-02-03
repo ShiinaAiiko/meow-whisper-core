@@ -13,7 +13,7 @@ import {
 	compareUnicodeOrder,
 } from '@nyanyajs/utils'
 // import { NEventListener } from './neventListener'
-import { NSocketIoClient } from '../nsocketio'
+import { NSocketIoClient } from './nsocketio'
 import {
 	interceptors,
 	Response,
@@ -40,11 +40,17 @@ type Status = 'connected' | 'connecting' | 'disconnect' | 'notConnected'
 type RouterEventName =
 	| 'router-receiveMessage'
 	| 'router-readAllMessages'
+	| 'router-startCallingMessage'
+	| 'router-hangupMessage'
+	| 'router-deleteMessages'
 	| 'router-error'
 
 export type RouterType = {
 	'router-receiveMessage': ResponseData<protoRoot.message.SendMessage.IResponse>
 	'router-readAllMessages': ResponseData<protoRoot.message.ReadAllMessages.IResponse>
+	'router-startCallingMessage': ResponseData<protoRoot.message.StartCalling.IResponse>
+	'router-hangupMessage': ResponseData<protoRoot.message.Hangup.IResponse>
+	'router-deleteMessages': ResponseData<protoRoot.message.DeleteMessages.IResponse>
 }
 
 export class MSCnsocketio extends NEventListener<Status | RouterEventName> {
@@ -166,49 +172,15 @@ export class MSCnsocketio extends NEventListener<Status | RouterEventName> {
 	async connect() {
 		if (this.status === 'connecting' && this.client) return
 		this.setStatus('connecting')
-
-		if (this.sdk.encryptionApi) {
-			if (this.sdk.encryption.status !== 'success') {
-				await this.sdk.encryption.init()
-			}
+		const query = await this.getQuery()
+		if (typeof query === 'string') {
+			return query
 		}
-		const { aesKey, userKey } = await this.sdk.encryption.getAesKey()
-		console.log(aesKey, userKey, this.sdk.encryption.status)
-		if (!aesKey || !userKey || this.sdk.encryption.status !== 'success') {
-			console.error('Encryption key not fetched.')
-			return
-		}
-
-		const verr = validation.Validate(
-			this.sdk.userInfo,
-			validation.Parameter('token', validation.Required()),
-			validation.Parameter('deviceId', validation.Required()),
-			validation.Parameter('userAgent', validation.Required())
-		)
-		if (verr) {
-			console.log(verr)
-			return verr
-		}
-
 		this.client = new NSocketIoClient({
 			uri: this.sdk.socketIoConfig.uri,
 			opts: {
 				...this.sdk.socketIoConfig.opts,
-				query: {
-					data: AES.encrypt(
-						P<protoRoot.base.IRequestType>(
-							{
-								token: this.sdk.userInfo.token,
-								deviceId: this.sdk.userInfo.deviceId,
-								userAgent: this.sdk.userInfo.userAgent,
-								appId: this.sdk.appId,
-							},
-							protoRoot.base.RequestType
-						),
-						aesKey
-					).value,
-					key: userKey,
-				},
+				query: await this.getQuery(),
 				reconnectionDelay: 6000,
 			},
 			heartbeatInterval: 0,
@@ -244,6 +216,45 @@ export class MSCnsocketio extends NEventListener<Status | RouterEventName> {
 
 		this.createRouter()
 	}
+	async getQuery() {
+		if (this.sdk.encryptionApi) {
+			if (this.sdk.encryption.status !== 'success') {
+				await this.sdk.encryption.init()
+			}
+		}
+		const { aesKey, userKey } = await this.sdk.encryption.getAesKey()
+		console.log(aesKey, userKey, this.sdk.encryption.status)
+		if (!aesKey || !userKey || this.sdk.encryption.status !== 'success') {
+			console.error('Encryption key not fetched.')
+			return 'Encryption key not fetched.'
+		}
+
+		const verr = validation.Validate(
+			this.sdk.userInfo,
+			validation.Parameter('token', validation.Required()),
+			validation.Parameter('deviceId', validation.Required()),
+			validation.Parameter('userAgent', validation.Required())
+		)
+		if (verr) {
+			console.error(verr)
+			return verr
+		}
+		return {
+			data: AES.encrypt(
+				P<protoRoot.base.IRequestType>(
+					{
+						token: this.sdk.userInfo.token,
+						deviceId: this.sdk.userInfo.deviceId,
+						userAgent: this.sdk.userInfo.userAgent,
+						appId: this.sdk.appId,
+					},
+					protoRoot.base.RequestType
+				),
+				aesKey
+			).value,
+			key: userKey,
+		}
+	}
 	disconnect() {
 		if (this.status !== 'connected') return
 		console.log('MSCnsocketio disconnect')
@@ -265,6 +276,16 @@ export class MSCnsocketio extends NEventListener<Status | RouterEventName> {
 							// store.state.event.eventTarget.dispatchEvent(
 							// 	new Event('initEncryption')
 							// )
+							this.sdk.encryption.clear().then(async () => {
+								if (this.client?.manager?.opts.query) {
+									const query = await this.getQuery()
+                  if (typeof query === 'string') {
+										return query
+									}
+									this.client.manager.opts.query = query
+								}
+							})
+
 							break
 						case 10004:
 							// store.state.event.eventTarget.dispatchEvent(new Event('initLogin'))
@@ -316,6 +337,43 @@ export class MSCnsocketio extends NEventListener<Status | RouterEventName> {
 						R<protoRoot.message.ReadAllMessages.IResponse>(
 							this.useResponse(response) as any,
 							protoRoot.message.ReadAllMessages.Response
+						)
+					)
+				},
+			})
+			.router({
+				eventName:
+					this.eventName[apiVersion].routeEventName['startCallingMessage'],
+				func: (response) => {
+					this.dispatch(
+						'router-startCallingMessage',
+						R<protoRoot.message.StartCalling.IResponse>(
+							this.useResponse(response) as any,
+							protoRoot.message.StartCalling.Response
+						)
+					)
+				},
+			})
+			.router({
+				eventName: this.eventName[apiVersion].routeEventName['hangupMessage'],
+				func: (response) => {
+					this.dispatch(
+						'router-hangupMessage',
+						R<protoRoot.message.Hangup.IResponse>(
+							this.useResponse(response) as any,
+							protoRoot.message.Hangup.Response
+						)
+					)
+				},
+			})
+			.router({
+				eventName: this.eventName[apiVersion].routeEventName['deleteMessages'],
+				func: (response) => {
+					this.dispatch(
+						'router-deleteMessages',
+						R<protoRoot.message.DeleteMessages.IResponse>(
+							this.useResponse(response) as any,
+							protoRoot.message.DeleteMessages.Response
 						)
 					)
 				},

@@ -7,9 +7,11 @@ import (
 )
 
 var (
-	log              = nlog.New()
-	contactDbx       = dbxV1.ContactDbx{}
-	groupDbx         = dbxV1.GroupDbx{}
+	log         = nlog.New()
+	contactDbx  = dbxV1.ContactDbx{}
+	groupDbx    = dbxV1.GroupDbx{}
+	messagesDbx = dbxV1.MessagesDbx{}
+
 	namespaces       = api.Namespace[api.ApiVersion]
 	routeEventName   = api.EventName[api.ApiVersion]["routeEventName"]
 	requestEventName = api.EventName[api.ApiVersion]["requestEventName"]

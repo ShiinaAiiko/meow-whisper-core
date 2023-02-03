@@ -18,6 +18,9 @@ import { mwcMethods, mwcSlice } from './mwc'
 import { contactsMethods, contactsSlice } from './contacts'
 import { groupMethods, groupSlice } from './group'
 import { messagesMethods, messagesSlice } from './messages'
+import { callMethods, callSlice } from './call'
+import { fileMethods, fileSlice } from './file'
+import { toolsMethods, toolsSlice } from './tools'
 
 export interface ActionParams<T = any> {
 	type: string
@@ -36,6 +39,9 @@ const rootReducer = combineReducers({
 	contacts: contactsSlice.reducer,
 	group: groupSlice.reducer,
 	messages: messagesSlice.reducer,
+	call: callSlice.reducer,
+	file: fileSlice.reducer,
+	tools: toolsSlice.reducer,
 })
 
 const store = configureStore({
@@ -57,6 +63,9 @@ export {
 	contactsSlice,
 	groupSlice,
 	messagesSlice,
+	callSlice,
+	fileSlice,
+	toolsSlice,
 }
 export const methods = {
 	storage: storageMethods,
@@ -70,6 +79,9 @@ export const methods = {
 	contacts: contactsMethods,
 	group: groupMethods,
 	messages: messagesMethods,
+	call: callMethods,
+	file: fileMethods,
+	tools: toolsMethods,
 }
 
 // console.log(store.getState())

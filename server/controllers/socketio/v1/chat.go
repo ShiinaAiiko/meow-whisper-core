@@ -2,15 +2,19 @@ package socketIoControllersV1
 
 import (
 	"errors"
+	"time"
 
+	conf "github.com/ShiinaAiiko/meow-whisper-core/config"
 	"github.com/ShiinaAiiko/meow-whisper-core/models"
 	"github.com/ShiinaAiiko/meow-whisper-core/protos"
 	"github.com/ShiinaAiiko/meow-whisper-core/services/methods"
 	"github.com/ShiinaAiiko/meow-whisper-core/services/response"
+	"github.com/cherrai/nyanyago-utils/cipher"
 	"github.com/cherrai/nyanyago-utils/nsocketio"
+	"github.com/cherrai/nyanyago-utils/nstrings"
 	"github.com/cherrai/nyanyago-utils/validation"
 	sso "github.com/cherrai/saki-sso-go"
-	"github.com/jinzhu/copier"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // var friendsDbx = new(dbxV1.FriendsDbx)
@@ -132,7 +136,6 @@ func (cc *ChatController) SendMessage(e *nsocketio.EventInstance) error {
 		validation.Parameter(&data.Type, validation.Enum([]string{"Group", "Contact"}), validation.Required()),
 		validation.Parameter(&data.RoomId, validation.Type("string"), validation.Required()),
 		validation.Parameter(&data.AuthorId, validation.Type("string"), validation.Required()),
-		validation.Parameter(&data.Message, validation.Type("string"), validation.Required()),
 	); err != nil {
 		res.Errors(err)
 		res.Code = 10002
@@ -140,17 +143,74 @@ func (cc *ChatController) SendMessage(e *nsocketio.EventInstance) error {
 		return err
 	}
 
+	if data.Call == nil && data.Image == nil {
+		if err = validation.ValidateStruct(
+			data.Call,
+			validation.Parameter(&data.Message, validation.Type("string"), validation.Required()),
+		); err != nil {
+			res.Errors(err)
+			res.Code = 10002
+			res.CallSocketIo(e)
+			return err
+		}
+	}
+
+	if data.Image != nil && data.Image.Url != "" {
+		if err = validation.ValidateStruct(
+			data.Image,
+			validation.Parameter(&data.Image.Url, validation.Required()),
+			validation.Parameter(&data.Image.Width, validation.Greater(0), validation.Required()),
+			validation.Parameter(&data.Image.Height, validation.Greater(0), validation.Required()),
+		); err != nil {
+			res.Errors(err)
+			res.Code = 10002
+			res.CallSocketIo(e)
+			return err
+		}
+	}
+
 	appId := e.GetSessionCache("appId")
 	// deviceId := e.GetSessionCache("deviceId").(string)
 	userInfo := e.GetSessionCache("userInfo").(*sso.AnonymousUserInfo)
 
 	log.Info(data, appId, userInfo)
-
-	message, err := messagesDbx.SendMessage(&models.Messages{
+	mp := models.Messages{
 		RoomId:   data.RoomId,
 		AuthorId: data.AuthorId,
 		Message:  data.Message,
-	})
+	}
+	if data.ReplyId != "" {
+		if replyId, err := primitive.ObjectIDFromHex(data.ReplyId); err == nil {
+			mp.ReplyId = replyId
+		}
+	}
+
+	if data.Call != nil && data.Call.Type != "" {
+		p := []*models.MessagesCallParticipants{}
+		for _, v := range data.Call.Participants {
+			p = append(p, &models.MessagesCallParticipants{
+				Uid:    v.Uid,
+				Caller: v.Caller,
+			})
+		}
+		mp.Call = &models.MessagesCall{
+			Status:       data.Call.Status,
+			RoomId:       data.Call.RoomId,
+			Participants: p,
+			Type:         data.Call.Type,
+			Time:         data.Call.Time,
+		}
+	}
+
+	if data.Image != nil && data.Image.Url != "" {
+		mp.Image = &models.MessagesImage{
+			Url:    data.Image.Url,
+			Width:  data.Image.Width,
+			Height: data.Image.Height,
+		}
+	}
+
+	message, err := messagesDbx.SendMessage(&mp)
 	log.Info("message", message, err)
 	if err != nil {
 		res.Errors(err)
@@ -188,11 +248,18 @@ func (cc *ChatController) SendMessage(e *nsocketio.EventInstance) error {
 	}
 
 	res.Code = 200
-	m := new(protos.Messages)
-	copier.Copy(m, message)
+
+	fMessage := methods.FormatMessages([]*models.Messages{message})
+
+	if len(fMessage) == 0 {
+		res.Errors(err)
+		res.Code = 10011
+		res.CallSocketIo(e)
+		return err
+	}
 
 	responseData := protos.SendMessage_Response{
-		Message: m,
+		Message: fMessage[0],
 	}
 	res.Data = protos.Encode(&responseData)
 	// log.Info("res.Data ", res.Data)
@@ -207,6 +274,222 @@ func (cc *ChatController) SendMessage(e *nsocketio.EventInstance) error {
 		routeEventName["receiveMessage"],
 		&res,
 		false)
+	return nil
+}
+
+func (cc *ChatController) EditMessage(e *nsocketio.EventInstance) error {
+	// 1、初始化返回体
+	var res response.ResponseProtobufType
+	// log.Info("/Chat => 发送信息")
+	res.Code = 200
+	res.CallSocketIo(e)
+
+	// 2、获取参数
+	data := new(protos.EditMessage_Request)
+	var err error
+	if err = protos.DecodeBase64(e.GetString("data"), data); err != nil {
+		res.Errors(err)
+		res.Code = 10002
+		res.CallSocketIo(e)
+		return err
+	}
+
+	// 3、校验参数
+	if err = validation.ValidateStruct(
+		data,
+		validation.Parameter(&data.RoomId, validation.Type("string"), validation.Required()),
+		validation.Parameter(&data.MessageId, validation.Type("string"), validation.Required()),
+		validation.Parameter(&data.AuthorId, validation.Type("string"), validation.Required()),
+		validation.Parameter(&data.Message, validation.Type("string"), validation.Required()),
+	); err != nil {
+		res.Errors(err)
+		res.Code = 10002
+		res.CallSocketIo(e)
+		return err
+	}
+
+	// appId := e.GetSessionCache("appId")
+	userInfo := e.GetSessionCache("userInfo").(*sso.AnonymousUserInfo)
+
+	if data.AuthorId != userInfo.Uid {
+		res.Errors(err)
+		res.Code = 10202
+		res.CallSocketIo(e)
+		return err
+	}
+
+	messageId, err := primitive.ObjectIDFromHex(data.MessageId)
+	if err != nil {
+		res.Errors(err)
+		res.Code = 10002
+		res.CallSocketIo(e)
+		return err
+	}
+
+	message := messagesDbx.EditMessage(messageId, data.RoomId, data.AuthorId, data.Message)
+	if message == nil {
+		res.Errors(err)
+		res.Code = 10011
+		res.CallSocketIo(e)
+		return err
+	}
+
+	log.Info("message", message.Message)
+
+	fMessage := methods.FormatMessages([]*models.Messages{message})
+
+	if len(fMessage) == 0 {
+		res.Errors(err)
+		res.Code = 10011
+		res.CallSocketIo(e)
+		return err
+	}
+	responseData := protos.SendMessage_Response{
+		Message: fMessage[0],
+	}
+	res.Code = 200
+	res.Data = protos.Encode(&responseData)
+	res.CallSocketIo(e)
+	return nil
+}
+
+// 支持群组多人通话或者个人通话
+// groupId string，uids array
+func (cc *ChatController) StartCalling(e *nsocketio.EventInstance) error {
+	// 1、初始化返回体
+	var res response.ResponseProtobufType
+	res.Code = 200
+
+	// 2、获取参数
+	data := new(protos.StartCalling_Request)
+	var err error
+	if err = protos.DecodeBase64(e.GetString("data"), data); err != nil {
+		res.Error = err.Error()
+		res.Code = 10002
+		res.CallSocketIo(e)
+		return err
+	}
+	// 3、校验参数
+	if err = validation.ValidateStruct(
+		data,
+		validation.Parameter(&data.RoomId, validation.Required()),
+		validation.Parameter(&data.Type, validation.Required(), validation.Enum([]string{"Audio", "Video", "ScreenShare"})),
+		validation.Parameter(&data.Participants, validation.Required()),
+	); err != nil || len(data.Participants) <= 1 {
+		res.Error = err.Error()
+		res.Code = 10002
+		res.CallSocketIo(e)
+		return err
+	}
+
+	// 3、获取参数
+	appId := e.GetSessionCache("appId").(string)
+	userInfo := e.GetSessionCache("userInfo").(*sso.AnonymousUserInfo)
+	authorId := userInfo.Uid
+
+	// 存储一个临时token到redis,每个用户一个 key由roomId和uid生成
+	// 用于校验通话
+
+	rKey := conf.Redisdb.GetKey("SFUCallToken")
+	ck := cipher.MD5(data.RoomId + nstrings.ToString(time.Now().Unix()))
+	for _, v := range data.Participants {
+		err = conf.Redisdb.Set(rKey.GetKey(appId+data.RoomId+v.Uid), ck, rKey.GetExpiration())
+		if err != nil {
+			res.Error = err.Error()
+			res.Code = 10001
+			res.CallSocketIo(e)
+			return nil
+		}
+	}
+
+	res.Code = 200
+	// fmt.Println(msgRes)
+	res.Data = protos.Encode(&protos.StartCalling_Response{
+		Participants:  data.Participants,
+		RoomId:        data.RoomId,
+		Type:          data.Type,
+		CurrentUserId: authorId,
+		CallToken:     ck,
+	})
+	res.CallSocketIo(e)
+
+	msc := methods.SocketConn{
+		Conn: e.ConnContext(),
+	}
+	msc.BroadcastToRoom(data.RoomId,
+		routeEventName["startCallingMessage"],
+		&res,
+		true)
+
+	return nil
+}
+
+func (cc *ChatController) Hangup(e *nsocketio.EventInstance) error {
+	// 1、初始化返回体
+	var res response.ResponseProtobufType
+	res.Code = 200
+
+	// 2、校验参数
+	data := new(protos.Hangup_Request)
+	var err error
+	if err = protos.DecodeBase64(e.GetString("data"), data); err != nil {
+		res.Error = err.Error()
+		res.Code = 10002
+		res.CallSocketIo(e)
+		return err
+	}
+	// 3、校验参数
+	if err = validation.ValidateStruct(
+		data,
+		validation.Parameter(&data.RoomId, validation.Required()),
+		validation.Parameter(&data.Type, validation.Required(), validation.Enum([]string{"Audio", "Video", "ScreenShare"})),
+		validation.Parameter(&data.Participants, validation.Required()),
+	); err != nil || len(data.Participants) <= 1 {
+		res.Error = err.Error()
+		res.Code = 10002
+		res.CallSocketIo(e)
+		return err
+	}
+	// 3、获取参数
+	userInfo := e.GetSessionCache("userInfo").(*sso.AnonymousUserInfo)
+	authorId := userInfo.Uid
+
+	// fmt.Println("fromUid", fromUid, toUids, typeStr)
+	// if data.Send {
+	// 	// 需要发送信息告知结果
+	// 	log.Info("需要发送信息告知结果(预留)")
+	// 	if err = validation.ValidateStruct(
+	// 		data,
+	// 		validation.Parameter(&data.CallTime, validation.Required()),
+	// 		validation.Parameter(&data.Status, validation.Required(), validation.Enum([]int64{1, 0, -1, -2, -3})),
+	// 	); err != nil {
+	// 		res.Error = err.Error()
+	// 		res.Code = 10002
+	// 		res.CallSocketIo(e)
+	// 		return err
+	// 	}
+	// }
+
+	res.Code = 200
+
+	res.Data = protos.Encode(&protos.Hangup_Response{
+		Participants:  data.Participants,
+		RoomId:        data.RoomId,
+		Type:          data.Type,
+		Status:        data.Status,
+		CallTime:      data.CallTime,
+		CurrentUserId: authorId,
+	})
+	res.CallSocketIo(e)
+
+	msc := methods.SocketConn{
+		Conn: e.ConnContext(),
+	}
+	msc.BroadcastToRoom(data.RoomId,
+		routeEventName["hangupMessage"],
+		&res,
+		true)
+
 	return nil
 }
 

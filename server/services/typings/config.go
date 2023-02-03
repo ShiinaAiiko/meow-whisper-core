@@ -5,6 +5,7 @@ type Config struct {
 	SSO              Sso
 	StaticPathDomain string
 	SecretChatToken  SecretChatToken
+	Saass            SAaSS
 	Redis            Redis
 	Mongodb          Mongodb
 	StaticUrlPrefix  string
@@ -23,6 +24,12 @@ type SecretChatToken struct {
 	Issuer string
 	Key    string
 	AesKey string
+}
+type SAaSS struct {
+	AppId      string
+	AppKey     string
+	BaseUrl    string
+	ApiVersion string
 }
 type Sso struct {
 	Host string

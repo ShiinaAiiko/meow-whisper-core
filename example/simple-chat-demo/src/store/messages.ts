@@ -7,6 +7,7 @@ import {
 import md5 from 'blueimp-md5'
 import store, {
 	ActionParams,
+	callSlice,
 	configSlice,
 	contactsSlice,
 	methods,
@@ -20,15 +21,21 @@ import {
 	getInitials,
 	Debounce,
 	deepCopy,
+	SAaSS,
+	file,
+	images,
+	RunQueue,
 } from '@nyanyajs/utils'
 import { MeowWhisperCoreSDK } from '../modules/MeowWhisperCoreSDK'
 import { meowWhisperCore, sakisso } from '../config'
 import { userAgent } from './user'
 import { storage } from './storage'
-import { alert, snackbar } from '@saki-ui/core'
+import { alert, progressBar, snackbar } from '@saki-ui/core'
 import { room } from '../protos/proto'
+import { fileQueue } from './file'
 
 export const modeName = 'messages'
+export const messageQueue = new RunQueue()
 
 // export let meowWhisperCoreSDK: MeowWhisperCoreSDK | undefined
 
@@ -58,20 +65,31 @@ export interface MessagesMap {
 	pageSize: number
 	type: 'Group' | 'Contact'
 }
+let pageSize = 20
 
 const state: {
 	recentChatDialogueList: ChatDialogueItem[]
+	deleteDialogIds: string[]
 	activeRoomIndex: number
 	activeRoomInfo?: ChatDialogueItem
 	getMessageStatus: 'GetSuccess' | 'Getting' | 'Waiting'
 	messagesMap: {
 		[roomId: string]: MessagesMap
 	}
+	deleteMessage: {
+		roomId: string
+		list: string[]
+	}
 } = {
 	recentChatDialogueList: [],
+	deleteDialogIds: [],
 	activeRoomIndex: -1,
 	getMessageStatus: 'Waiting',
 	messagesMap: {},
+	deleteMessage: {
+		roomId: '',
+		list: [],
+	},
 }
 export const messagesSlice = createSlice({
 	name: modeName,
@@ -87,12 +105,22 @@ export const messagesSlice = createSlice({
 			state.recentChatDialogueList.sort((a, b) => {
 				return b.sort - a.sort
 			})
+			console.log(state.recentChatDialogueList)
+		},
+		setDeleteDialogIds: (
+			state,
+			params: ActionParams<typeof state['deleteDialogIds']>
+		) => {
+			state.deleteDialogIds = params.payload
 		},
 		setActiveRoomIndex: (
 			state,
 			params: ActionParams<typeof state['activeRoomIndex']>
 		) => {
 			state.activeRoomIndex = params.payload
+			if (params.payload === -1) {
+				return
+			}
 			state.recentChatDialogueList[state.activeRoomIndex].showMessageContainer =
 				true
 		},
@@ -108,6 +136,13 @@ export const messagesSlice = createSlice({
 		) => {
 			state.getMessageStatus = params.payload
 		},
+		setDeleteMessage: (
+			state,
+			params: ActionParams<typeof state['deleteMessage']>
+		) => {
+			state.deleteMessage = params.payload
+		},
+
 		initMessageMap: (
 			state,
 			params: ActionParams<{
@@ -120,9 +155,18 @@ export const messagesSlice = createSlice({
 				list: [],
 				status: 'loaded',
 				pageNum: 1,
-				pageSize: 10,
+				pageSize: pageSize,
 				type,
 			}
+		},
+		deleteMessageMap: (
+			state,
+			params: ActionParams<{
+				roomId: string
+			}>
+		) => {
+			const { roomId } = params.payload
+			delete state.messagesMap[roomId]
 		},
 		setMessageMapStatus: (
 			state,
@@ -158,7 +202,7 @@ export const messagesSlice = createSlice({
 			const { roomId, messageId, value } = params.payload
 			const mv = state.messagesMap[roomId]
 			mv.list.some((v, i) => {
-				console.log(v.id, messageId, value)
+				// console.log(v.id, messageId, value)
 				if (v.id === messageId) {
 					mv.list[i] = {
 						...value,
@@ -166,17 +210,24 @@ export const messagesSlice = createSlice({
 					return true
 				}
 			})
-			console.log(deepCopy(mv.list))
+			// console.log(deepCopy(mv.list))
 		},
 		setDraft: (
 			state,
 			params: ActionParams<{
-				index: number
+				roomId: string
 				message: string
 			}>
 		) => {
-			state.recentChatDialogueList[params.payload.index].typingMessage =
-				params.payload.message
+			state.recentChatDialogueList.some((v, i) => {
+				if (v.roomId === params.payload.roomId) {
+					// console.log(deepCopy(v))
+					state.recentChatDialogueList[i].typingMessage = params.payload.message
+					return true
+				}
+			})
+			// state.recentChatDialogueList[params.payload.index].typingMessage =
+			// 	params.payload.message
 			// state.activeRoomInfo = params.payload
 		},
 	},
@@ -184,6 +235,23 @@ export const messagesSlice = createSlice({
 
 export const messagesMethods = {
 	init: createAsyncThunk<
+		void,
+		void,
+		{
+			state: RootState
+		}
+	>(modeName + '/init', async (_, thunkAPI) => {
+		const { mwc, contacts, group, user } = thunkAPI.getState()
+
+		// setDeleteDialogIds
+
+		thunkAPI.dispatch(
+			messagesSlice.actions.setDeleteDialogIds(
+				(await storage.global.get('deleteDialogIds')) || []
+			)
+		)
+	}),
+	initRooms: createAsyncThunk<
 		void,
 		void,
 		{
@@ -233,7 +301,15 @@ export const messagesMethods = {
 		}
 	>(modeName + '/setChatDialogue', async (dialog, thunkAPI) => {
 		const { mwc, group, user, messages } = thunkAPI.getState()
+
+		await thunkAPI.dispatch(
+			methods.messages.showDialog({
+				roomId: dialog.roomId,
+			})
+		)
+
 		let ai = -1
+
 		messages.recentChatDialogueList.some((v, i) => {
 			if (v.roomId === dialog.roomId) {
 				ai = i
@@ -249,6 +325,7 @@ export const messagesMethods = {
 		)
 		if (ai === -1) {
 			dialog.unreadMessageCount = 0
+			dialog.sort = Math.floor(new Date().getTime() / 1000)
 			thunkAPI.dispatch(
 				messagesSlice.actions.setRecentChatDialogueList(
 					[dialog].concat(messages.recentChatDialogueList)
@@ -267,12 +344,17 @@ export const messagesMethods = {
 								unreadMessageCount:
 									dialog.unreadMessageCount === -1
 										? v.unreadMessageCount + 1
+										: dialog.unreadMessageCount === -2
+										? v.unreadMessageCount
 										: dialog.unreadMessageCount,
+
+								sort: dialog.sort === -1 ? v.sort : dialog.sort,
 							}
-							if (v.roomId === messages.activeRoomInfo?.roomId) {
-								t.unreadMessageCount = 0
-							}
+							// if (v.roomId === messages.activeRoomInfo?.roomId) {
+							// 	t.unreadMessageCount = 0
+							// }
 							t.id = v.id
+							console.log(deepCopy(t), deepCopy(dialog))
 							return t
 						}
 						return v
@@ -293,15 +375,19 @@ export const messagesMethods = {
 		const res = await mwc.sdk?.api.message.getRecentChatDialogueList()
 		console.log('getRecentChatDialogueList res', res)
 		if (res?.code === 200) {
+			const { messages } = thunkAPI.getState()
 			thunkAPI.dispatch(
 				messagesSlice.actions.setRecentChatDialogueList(
 					res.data?.list?.map<ChatDialogueItem>((v) => {
+						const cd = messages.recentChatDialogueList.filter((sv) => {
+							return sv.id === v.id
+						})?.[0]
 						if (v.type === 'Group') {
 							return {
 								...v,
 								id: v.id || '',
 								type: 'Group',
-								showMessageContainer: false,
+								showMessageContainer: cd?.showMessageContainer || false,
 								roomId: v.roomId || '',
 								unreadMessageCount: Number(v.unreadMessageCount) || 0,
 								sort: Number(v.lastMessageTime) || 0,
@@ -313,7 +399,7 @@ export const messagesMethods = {
 							...v,
 							id: v.id || '',
 							type: 'Contact',
-							showMessageContainer: false,
+							showMessageContainer: cd?.showMessageContainer || false,
 							roomId: v.roomId || '',
 							unreadMessageCount: Number(v.unreadMessageCount) || 0,
 							sort: Number(v.lastMessageTime) || 0,
@@ -321,7 +407,42 @@ export const messagesMethods = {
 					}) || []
 				)
 			)
+			// thunkAPI.dispatch(methods.messages.setActiveRoomIndex(0))
+		} else {
+			thunkAPI.dispatch(messagesSlice.actions.setRecentChatDialogueList([]))
 		}
+	}),
+	showDialog: createAsyncThunk<
+		void,
+		{ roomId: string },
+		{
+			state: RootState
+		}
+	>(modeName + '/showDialog', async ({ roomId }, thunkAPI) => {
+		const { mwc, group, messages } = thunkAPI.getState()
+		console.log('roomId', roomId)
+		let list = messages.deleteDialogIds.filter((v) => {
+			return v !== roomId
+		})
+		thunkAPI.dispatch(messagesSlice.actions.setDeleteDialogIds(list))
+		await storage.global.set('deleteDialogIds', list)
+	}),
+	hideDialog: createAsyncThunk<
+		void,
+		{ roomId: string },
+		{
+			state: RootState
+		}
+	>(modeName + '/hideDialog', async ({ roomId }, thunkAPI) => {
+		const { mwc, group, messages } = thunkAPI.getState()
+		console.log('roomId', roomId)
+		let list = messages.deleteDialogIds.concat(roomId)
+		thunkAPI.dispatch(
+			messagesSlice.actions.setDeleteDialogIds(
+				messages.deleteDialogIds.concat(roomId)
+			)
+		)
+		await storage.global.set('deleteDialogIds', list)
 	}),
 	setActiveRoomIndex: createAsyncThunk<
 		void,
@@ -332,13 +453,15 @@ export const messagesMethods = {
 	>(modeName + '/setActiveRoomIndex', async (index, thunkAPI) => {
 		const { mwc, group, messages } = thunkAPI.getState()
 		const activeRoomIndex = index
+		console.log(index)
+		if (activeRoomIndex === -1) {
+			thunkAPI.dispatch(messagesSlice.actions.setActiveRoomIndex(-1))
+			thunkAPI.dispatch(messagesSlice.actions.setActiveRoomInfo(undefined))
+			return
+		}
 		const activeRoomInfo: ChatDialogueItem = {
 			...messages.recentChatDialogueList[activeRoomIndex],
 		}
-		console.log(
-			'messages.recentChatDialogueList',
-			messages.recentChatDialogueList
-		)
 		if (activeRoomInfo.type === 'Contact') {
 			const uinfo = mwc.cache.userInfo.get(activeRoomInfo.id || '')
 			activeRoomInfo.lastSeenTime = Number(uinfo.lastSeenTime) || -1
@@ -347,17 +470,295 @@ export const messagesMethods = {
 			const ginfo = mwc.cache.group.get(activeRoomInfo.id || '')
 			activeRoomInfo.members = Number(ginfo.members) || 0
 		}
+		console.log(
+			'messages.recentChatDialogueList',
+			messages.recentChatDialogueList,
+			activeRoomInfo,
+			activeRoomIndex
+		)
 		thunkAPI.dispatch(messagesSlice.actions.setActiveRoomIndex(activeRoomIndex))
 		thunkAPI.dispatch(messagesSlice.actions.setActiveRoomInfo(activeRoomInfo))
 	}),
-	sendMessage: createAsyncThunk<
+
+	sendFileMessage: createAsyncThunk<
+		void,
+		{ roomId: string; type: 'Image' | 'Video' | 'File' },
+		{
+			state: RootState
+		}
+	>(modeName + '/sendFileMessage', async ({ roomId, type }, thunkAPI) => {
+		console.log('sendFileMessage', roomId, type)
+		const { uploadFile, getHash } = SAaSS
+
+		let input = document.createElement('input')
+		input.type = 'file'
+		input.multiple = true
+		switch (type) {
+			case 'Image':
+				// 目前暂时仅支持PNG和JPG
+				input.accept = 'image/bmp,image/jpeg,image/png'
+				break
+			case 'Video':
+				input.accept = 'video/*'
+				break
+			// case 'File':
+			// 	imgInput.accept = '*'
+			// 	break
+
+			default:
+				break
+		}
+		let index = 0
+		const up = async (files: FileList, index: number) => {
+			try {
+				if (index >= files.length) {
+					return
+				}
+				const tempfile = files[index]
+				let file: File | undefined
+				let src = ''
+
+				switch (type) {
+					case 'Image':
+						if (
+							!(tempfile.type && input.accept,
+							input.accept.includes(tempfile.type))
+						) {
+							snackbar({
+								message: '选择的文件格式错误',
+								autoHideDuration: 2000,
+								vertical: 'top',
+								horizontal: 'center',
+								backgroundColor: 'var(--saki-default-color)',
+								color: '#fff',
+							}).open()
+							return
+						}
+
+						const resizeData = await images.resize(tempfile, {
+							maxPixel: 1280,
+							quality: 0.7,
+						})
+						if (!resizeData) return
+
+						file = resizeData.file
+						src = resizeData.dataURL
+
+						const mid = await thunkAPI
+							.dispatch(
+								methods.messages.sendMessage({
+									roomId: roomId,
+									storeOnlyLocally: true,
+									image: {
+										url: src,
+										width: resizeData.width,
+										height: resizeData.height,
+									},
+								})
+							)
+							.unwrap()
+						fileQueue.increase(() => {
+							return new Promise(async (res) => {
+								console.log('uploadFileMessage', file)
+								if (!file) {
+									console.log('file does not exist')
+									return
+								}
+
+								const url = await thunkAPI
+									.dispatch(
+										methods.file.uploadFile({
+											file,
+										})
+									)
+									.unwrap()
+
+								thunkAPI.dispatch(
+									methods.messages.resendMessageToServer({
+										messageId: mid,
+										roomId: roomId,
+										storeOnlyLocally: true,
+										image: {
+											url: url,
+											width: resizeData.width,
+											height: resizeData.height,
+										},
+									})
+								)
+								res()
+							})
+						}, 'uploadFileMessage')
+						up(files, index + 1)
+						break
+					// case 'Video':
+					// 	break
+					// case 'File':
+					// 	break
+
+					default:
+						console.log('暂时不支持')
+						break
+				}
+				if (file) {
+				}
+
+				// const res = await upload(resizeData.file)
+				// console.log('resizeData', res)
+				// if (res) {
+				// 	console.log(res)
+
+				// 	fileProgressBar.setProgress({
+				// 		progress: index + 1 / files.length,
+				// 		tipText: 'Uploading',
+				// 		onAnimationEnd() {
+				// 			fileProgressBar.close()
+				// 		},
+				// 	})
+
+				// 	index++
+
+				// 	richtextEl?.insetNode({
+				// 		type: type,
+				// 		src: res + config.saassConfig.parameters.imageResize.normal,
+				// 	})
+				// 	up(files, index)
+				// }
+			} catch (error) {
+				// fileProgressBar.setProgress({
+				// 	progress: 1,
+				// 	tipText: 'Upload failed',
+				// 	onAnimationEnd() {
+				// 		fileProgressBar.close()
+				// 	},
+				// })
+			}
+		}
+		input.oninput = async (e) => {
+			console.log(input?.files)
+			if (input?.files?.length) {
+				index = 0
+				up(input?.files, index)
+			}
+		}
+		input.click()
+	}),
+	resendMessageToServer: createAsyncThunk<
 		void,
 		{
+			messageId: string
 			roomId: string
-			id: string
-			type: string
-			message: string
-			onMessageSentSuccessfully: () => void
+			message?: string
+			call?: protoRoot.message.IMessagesCall
+			image?: protoRoot.message.IMessagesImage
+			// 只发送到本地，暂不上传到网络
+			// storeOnlyServer?: boolean
+			storeOnlyLocally?: boolean
+			onMessageSentSuccessfully?: () => void
+		},
+		{
+			state: RootState
+		}
+	>(
+		modeName + '/resendMessageToServer',
+		async (
+			{
+				messageId,
+				message,
+				roomId,
+				call,
+				image,
+				storeOnlyLocally,
+				onMessageSentSuccessfully,
+			},
+			thunkAPI
+		) => {
+			const { mwc, user, group, messages } = thunkAPI.getState()
+
+			const type = mwc.sdk?.methods.getType(roomId)
+			if (mwc.nsocketioStatus !== 'connected') {
+				console.log('连接失败')
+				return
+			}
+			if (!call && !image) {
+				if (!message) {
+					console.log('未输入信息')
+					return
+				}
+			}
+
+			console.log('resendMessageToServer', messageId, type, message)
+
+			const v = messages.messagesMap[roomId]
+			let m = v.list.filter((v) => v.id === messageId)?.[0]
+			m = {
+				...m,
+				call: call ? call : m.call,
+				image: image ? image : m.image,
+			}
+
+			let params: protoRoot.message.SendMessage.IRequest = {
+				roomId,
+				type,
+				authorId: user.userInfo.uid,
+				message,
+				call: call ? call : m.call,
+				image: image ? image : m.image,
+			}
+			const res = await mwc.sdk?.api.message.sendMessage(params)
+			console.log('sendMessage', params, res)
+			if (res?.code === 200 && res?.data?.message) {
+				thunkAPI.dispatch(
+					messagesSlice.actions.setMessageItem({
+						roomId,
+						messageId: messageId,
+						value: {
+							...res.data.message,
+							status: 1,
+						},
+					})
+				)
+
+				await thunkAPI.dispatch(
+					methods.messages.setChatDialogue({
+						roomId,
+						type: type as any,
+						id: '-1',
+						showMessageContainer: true,
+						unreadMessageCount: -2,
+						lastMessage: res.data.message,
+						lastMessageTime: Math.floor(new Date().getTime() / 1000),
+						sort: Math.floor(new Date().getTime() / 1000),
+					})
+				)
+			} else {
+				thunkAPI.dispatch(
+					messagesSlice.actions.setMessageItem({
+						roomId,
+						messageId: messageId,
+						value: {
+							...m,
+							status: -1,
+						},
+					})
+				)
+			}
+			onMessageSentSuccessfully?.()
+			await thunkAPI.dispatch(methods.messages.setActiveRoomIndex(0))
+		}
+	),
+	sendMessage: createAsyncThunk<
+		string,
+		{
+			roomId: string
+			message?: string
+			replyId?: string
+			replyMessage?: protoRoot.message.IMessages
+			call?: protoRoot.message.IMessagesCall
+			image?: protoRoot.message.IMessagesImage
+			// 只发送到本地，暂不上传到网络
+			// storeOnlyServer?: boolean
+			storeOnlyLocally?: boolean
+			onMessageSentSuccessfully?: () => void
 		},
 		{
 			state: RootState
@@ -365,34 +766,59 @@ export const messagesMethods = {
 	>(
 		modeName + '/sendMessage',
 		async (
-			{ id, type, message, roomId, onMessageSentSuccessfully },
+			{
+				message,
+				roomId,
+				replyId,
+				replyMessage,
+				call,
+				image,
+				storeOnlyLocally,
+				onMessageSentSuccessfully,
+			},
 			thunkAPI
 		) => {
-			const { mwc, user, group, messages } = thunkAPI.getState()
+			const { mwc, user, group } = thunkAPI.getState()
+
+			const type = mwc.sdk?.methods.getType(roomId)
+
+			if (!thunkAPI.getState().messages.messagesMap[roomId]) {
+				thunkAPI.dispatch(
+					messagesSlice.actions.initMessageMap({
+						roomId,
+						type: type as any,
+					})
+				)
+			}
+			const { messages } = thunkAPI.getState()
 
 			if (mwc.nsocketioStatus !== 'connected') {
 				console.log('连接失败')
-				return
+				return ''
 			}
-			if (!message) {
-				console.log('未输入信息')
-				return
+			if (!call && !image) {
+				if (!message) {
+					console.log('未输入信息')
+					return ''
+				}
 			}
-			console.log('sendMessage', id, type, message)
 
-			let mid = md5(
-				user.userInfo.uid + message + Math.floor(new Date().getTime() / 1000)
-			)
+			let mid = md5(user.userInfo.uid + message + new Date().getTime() + roomId)
 			const v = messages.messagesMap[roomId]
+			console.log('sendMessage', type, message, v)
 
 			let m: MessageItem = {
 				id: mid,
 				authorId: user.userInfo.uid,
 				message: message,
-
+				replyId,
+				replyMessage,
+				call: call ? call : {},
+				image: image ? image : {},
 				createTime: Math.floor(new Date().getTime() / 1000),
 				status: 0,
 			}
+
 			thunkAPI.dispatch(
 				messagesSlice.actions.setMessageMapList({
 					roomId,
@@ -406,45 +832,76 @@ export const messagesMethods = {
 					type: type as any,
 					id: '-1',
 					showMessageContainer: true,
-					unreadMessageCount: -1,
+					unreadMessageCount: -2,
 					lastMessage: m,
 					lastMessageTime: Math.floor(new Date().getTime() / 1000),
 					sort: Math.floor(new Date().getTime() / 1000),
 				})
 			)
+
+			onMessageSentSuccessfully?.()
 			await thunkAPI.dispatch(methods.messages.setActiveRoomIndex(0))
 
-			const res = await mwc.sdk?.api.message.sendMessage({
-				roomId,
-				type,
-				authorId: user.userInfo.uid,
-				message,
-			})
-			console.log('sendMessage', res)
-			if (res?.code === 200 && res?.data?.message) {
-				thunkAPI.dispatch(
-					messagesSlice.actions.setMessageItem({
+			if (!storeOnlyLocally) {
+				let params: protoRoot.message.SendMessage.IRequest = {
+					roomId,
+					type,
+					authorId: user.userInfo.uid,
+					message,
+					replyId,
+					call: call ? call : {},
+					image: image ? image : {},
+				}
+				const res = await mwc.sdk?.api.message.sendMessage(params)
+				console.log(
+					'sendMessage',
+					{
 						roomId,
-						messageId: mid,
-						value: {
-							...res.data.message,
-							status: 1,
-						},
-					})
+						type,
+						authorId: user.userInfo.uid,
+						message,
+					},
+					res
 				)
-			} else {
-				thunkAPI.dispatch(
-					messagesSlice.actions.setMessageItem({
-						roomId,
-						messageId: mid,
-						value: {
-							...m,
-							status: -1,
-						},
-					})
-				)
+				if (res?.code === 200 && res?.data?.message) {
+					thunkAPI.dispatch(
+						messagesSlice.actions.setMessageItem({
+							roomId,
+							messageId: mid,
+							value: {
+								...res.data.message,
+								status: 1,
+							},
+						})
+					)
+
+					await thunkAPI.dispatch(
+						methods.messages.setChatDialogue({
+							roomId,
+							type: type as any,
+							id: '-1',
+							showMessageContainer: true,
+							unreadMessageCount: -2,
+							lastMessage: res.data.message,
+							lastMessageTime: Math.floor(new Date().getTime() / 1000),
+							sort: Math.floor(new Date().getTime() / 1000),
+						})
+					)
+					return res.data.message.id || ''
+				} else {
+					thunkAPI.dispatch(
+						messagesSlice.actions.setMessageItem({
+							roomId,
+							messageId: mid,
+							value: {
+								...m,
+								status: -1,
+							},
+						})
+					)
+				}
 			}
-			onMessageSentSuccessfully()
+			return mid
 		}
 	),
 	// 预留
@@ -538,15 +995,22 @@ export const messagesMethods = {
 						value: 'loaded',
 					})
 				)
-				return
+			} else {
+				thunkAPI.dispatch(
+					messagesSlice.actions.setMessageMapStatus({
+						roomId,
+						value: 'noMore',
+					})
+				)
 			}
+		} else {
+			thunkAPI.dispatch(
+				messagesSlice.actions.setMessageMapStatus({
+					roomId,
+					value: 'loaded',
+				})
+			)
 		}
-		thunkAPI.dispatch(
-			messagesSlice.actions.setMessageMapStatus({
-				roomId,
-				value: 'noMore',
-			})
-		)
 
 		// thunkAPI.dispatch(messagesSlice.actions.setGetMessageStatus('GetSuccess'))
 	}),
@@ -566,18 +1030,19 @@ export const messagesMethods = {
 			return v.roomId === roomId
 		})?.[0]
 
+		// console.log(
+		// 	'开始阅读消息 readMessages',
+		// 	dialog?.unreadMessageCount,
+		// 	roomId,
+		// 	mv.status
+		// )
 		if (!dialog?.unreadMessageCount) return
 
-		console.log(
-			'开始阅读消息 readMessages',
-			dialog?.unreadMessageCount,
-			roomId,
-			mv.status
-		)
 		thunkAPI.dispatch(
 			methods.messages.setChatDialogue({
 				...dialog,
 				unreadMessageCount: 0,
+				sort: -1,
 			})
 		)
 
@@ -592,9 +1057,18 @@ export const messagesMethods = {
 					list: mv.list.map((v) => {
 						return {
 							...v,
-							readUserIds: Array.from(
-								new Set(v.readUserIds?.concat([res.data.uid || '']))
-							),
+							readUsers:
+								v.authorId !== res.data.uid
+									? v.readUsers
+											?.filter((v) => {
+												return v.uid !== res.data.uid || ''
+											})
+											?.concat([
+												{
+													uid: res.data.uid || '',
+												},
+											])
+									: v.readUsers,
 						}
 					}),
 				})
@@ -603,4 +1077,245 @@ export const messagesMethods = {
 
 		// thunkAPI.dispatch(messagesSlice.actions.setGetMessageStatus('GetSuccess'))
 	}),
+	editMessage: createAsyncThunk<
+		void,
+		{
+			roomId: string
+			messageId: string
+			message: string
+			onMessageSentSuccessfully?: () => void
+		},
+		{
+			state: RootState
+		}
+	>(
+		modeName + '/editMessage',
+		async (
+			{ roomId, message, messageId, onMessageSentSuccessfully },
+			thunkAPI
+		) => {
+			const { mwc, user, group, messages } = thunkAPI.getState()
+
+			const mv = messages.messagesMap[roomId]
+			const dialog = messages.recentChatDialogueList.filter((v) => {
+				return v.roomId === roomId
+			})?.[0]
+
+			mv.list.some((v) => {
+				if (v.id === messageId) {
+					thunkAPI.dispatch(
+						messagesSlice.actions.setMessageItem({
+							roomId,
+							messageId: messageId,
+							value: {
+								...v,
+								message,
+								status: 0,
+							},
+						})
+					)
+					return true
+				}
+			})
+			onMessageSentSuccessfully?.()
+
+			const res = await mwc.sdk?.api.message.editMessage({
+				roomId,
+				messageId,
+				authorId: user.userInfo.uid,
+				message,
+			})
+			console.log(res)
+			if (res?.code === 200 && res?.data?.message) {
+				thunkAPI.dispatch(
+					messagesSlice.actions.setMessageItem({
+						roomId,
+						messageId: messageId,
+						value: {
+							...res.data.message,
+							status: 1,
+						},
+					})
+				)
+			}
+			// thunkAPI.dispatch(messagesSlice.actions.setGetMessageStatus('GetSuccess'))
+		}
+	),
+	clearHistory: createAsyncThunk<
+		void,
+		{ roomId: string },
+		{
+			state: RootState
+		}
+	>(modeName + '/clearHistory', async ({ roomId }, thunkAPI) => {
+		// alert({
+		// 	title: 'Clear chat history',
+		// 	content: 'Are you sure you want to delete all messages in the chat?',
+		// 	cancelText: 'Cancel',
+		// 	confirmText: 'Clear',
+		// 	onCancel() {},
+		// 	async onConfirm() {
+		// 	},
+		// }).open()
+
+		// const { mwc, group, messages } = thunkAPI.getState()
+		// const mv = messages.messagesMap[roomId]
+		// const dialog = messages.recentChatDialogueList.filter((v) => {
+		// 	return v.roomId === roomId
+		// })?.[0]
+		// console.log('clearHistory roomId', roomId, mv, dialog)
+
+		// if (!dialog) return
+		// thunkAPI.dispatch(
+		// 	messagesSlice.actions.deleteMessageMap({
+		// 		roomId,
+		// 	})
+		// )
+		// thunkAPI.dispatch(
+		// 	messagesSlice.actions.initMessageMap({
+		// 		roomId,
+		// 		type: dialog.type,
+		// 	})
+		// )
+
+		thunkAPI.dispatch(
+			messagesSlice.actions.setDeleteMessage({
+				roomId,
+				list: ['AllMessages'],
+			})
+		)
+	}),
+	forwardMessages: createAsyncThunk<
+		void,
+		{
+			ids: string[]
+			messageList: MessageItem[]
+		},
+		{
+			state: RootState
+		}
+	>(modeName + '/forwardMessages', async ({ ids, messageList }, thunkAPI) => {
+		const { mwc, group, messages } = thunkAPI.getState()
+
+		console.log('forwardMessages', ids, messageList)
+		ids.forEach((v) => {
+			messages.recentChatDialogueList.some((sv) => {
+				if (v === sv.id) {
+					messageList.forEach((ssv) => {
+						messageQueue.increase(async () => {
+							console.log(sv.roomId, ssv)
+							await thunkAPI.dispatch(
+								methods.messages.sendMessage({
+									roomId: sv.roomId,
+									message: ssv?.message || '',
+									call: ssv?.call || {},
+									image: ssv?.image || {},
+								})
+							)
+						}, 'forwardMessages')
+					})
+					return true
+				}
+			})
+		})
+	}),
+
+	deleteMessages: createAsyncThunk<
+		void,
+		{
+			roomId: string
+			deleteAll: boolean
+			messageIdList: string[]
+			type: 'AllUser' | 'MySelf'
+			expirationTime: number
+		},
+		{
+			state: RootState
+		}
+	>(
+		modeName + '/deleteMessages',
+		async (
+			{ roomId, deleteAll, messageIdList, type, expirationTime },
+			thunkAPI
+		) => {
+			console.log('deleteMessages', messageIdList)
+			const { mwc, group, messages, user } = thunkAPI.getState()
+			const mv = messages.messagesMap[roomId]
+			const dialog = messages.recentChatDialogueList.filter((v) => {
+				return v.roomId === roomId
+			})?.[0]
+			console.log(mv, dialog, {
+				roomId,
+				messageIdList,
+				type,
+				expirationTime,
+			})
+
+			messageIdList = deleteAll ? ['AllMessages'] : messageIdList
+
+			if (!messageIdList.length) {
+				return
+			}
+			const res = await mwc.sdk?.api.message.deleteMessages({
+				roomId,
+				messageIdList,
+				type,
+				expirationTime,
+			})
+			console.log('deleteMessages', res)
+			if (res?.code === 200) {
+				thunkAPI.dispatch(
+					methods.messages.deleteLocalMessages({
+						roomId: roomId || '',
+						messageIdList: messageIdList || [],
+						uid: user.userInfo.uid || '',
+					})
+				)
+			}
+		}
+	),
+
+	deleteLocalMessages: createAsyncThunk<
+		void,
+		{
+			roomId: string
+			messageIdList: string[]
+			uid: string
+		},
+		{
+			state: RootState
+		}
+	>(
+		modeName + '/deleteLocalMessages',
+		async ({ roomId, messageIdList, uid }, thunkAPI) => {
+			console.log('deleteMessages', messageIdList)
+			const { mwc, group, messages, user } = thunkAPI.getState()
+			const mv = messages.messagesMap[roomId]
+
+			if (messageIdList.includes('AllMessages')) {
+				thunkAPI.dispatch(
+					messagesSlice.actions.setMessageMapList({
+						roomId,
+						list:
+							uid === user.userInfo.uid
+								? []
+								: mv.list.filter((v) => {
+										return v.authorId !== uid
+								  }),
+					})
+				)
+			} else {
+				thunkAPI.dispatch(
+					messagesSlice.actions.setMessageMapList({
+						roomId,
+						list: mv.list.filter((v) => {
+							return uid === user.userInfo.uid
+								? !messageIdList.includes(v?.id || '')
+								: !(v.authorId === uid && messageIdList.includes(v?.id || ''))
+						}),
+					})
+				)
+			}
+		}
+	),
 }

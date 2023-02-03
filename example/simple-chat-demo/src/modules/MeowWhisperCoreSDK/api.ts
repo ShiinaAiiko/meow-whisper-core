@@ -51,10 +51,17 @@ export const apiUrls = {
 		// 可以根据时间范围筛选
 		getHistoricalMessages: '/message/historical/list/get',
 		readAllMessages: '/message/read/all',
+		deleteMessages: '/message/delete',
 
 		// User
 		// 传入ID数组，返用户数组
 		getUserInfoList: '/user/info/list/get',
+
+		// File
+		getUploadFileToken: '/file/uplpad/token/get',
+
+		// call
+		verifyCallToken: '/call/token/verify',
 	},
 }
 
@@ -95,21 +102,24 @@ export const eventName = {
 			// 通过roomId
 			readAllMessages: 'ReadAllMessages',
 			recalledMessage: 'RecalledMessage',
-			otherUserTurnOnCallMessage: 'OtherUserTurnOnCallMessage',
-			otherUserTurnOffCallMessage: 'OtherUserTurnOffCallMessage',
+			deleteMessages: 'DeleteMessages',
+
+			startCallingMessage: 'StartCallingMessage',
+			hangupMessage: 'HangupMessage',
 		},
 		requestEventName: {
 			joinRoom: 'JoinRoom',
-			// Message 聊天用 -> receiveMessage
+			// Message 聊天用
 			sendMessage: 'SendMessage',
+			editMessage: 'EditMessage',
 			// 通过messageId
 			readMessage: 'ReadMessage',
 			// 通过roomId 阅读该房间的所有消息
 			readAllMessage: 'ReadAllMessage',
 			recallMessage: 'RecallMessage',
 			// 以roomId为单位，可以选择哪些用户参与
-			turnOnCallMessage: 'TurnOnCallMessage',
-			turnOffCallMessage: 'TurnOffCallMessage',
+			startCalling: 'StartCalling',
+			hangup: 'Hangup',
 		},
 	},
 }

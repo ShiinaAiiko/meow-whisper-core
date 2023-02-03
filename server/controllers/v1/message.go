@@ -7,6 +7,7 @@ import (
 	"github.com/ShiinaAiiko/meow-whisper-core/services/methods"
 	"github.com/ShiinaAiiko/meow-whisper-core/services/response"
 	"github.com/jinzhu/copier"
+	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/cherrai/nyanyago-utils/nint"
@@ -237,13 +238,34 @@ func (fc *MessageController) GetHistoricalMessages(c *gin.Context) {
 	for i := len(getMessages) - 1; i >= 0; i-- {
 		v := getMessages[i]
 		pm := new(protos.Messages)
-		copier.Copy(pm, v)
-		pm.Id = v.Id.Hex()
+		// copier.Copy(pm, v)
 
-		pm.ForwardChatIds = []string{}
-		for _, v := range v.ForwardChatIds {
-			pm.ForwardChatIds = append(pm.ForwardChatIds, v.Hex())
+		mapstructure.Decode(v, pm)
+
+		// log.Info("len(v.ReplyMessage) > 0", v["replyMessage"])
+		rmlist := v["replyMessage"].(primitive.A)
+		if len(rmlist) > 0 {
+			rm := new(protos.Messages)
+			vrm := rmlist[0].(primitive.M)
+			mapstructure.Decode(vrm, rm)
+			rm.Id = vrm["_id"].(primitive.ObjectID).Hex()
+			if vrm["replyId"] != nil {
+				rm.ReplyId = vrm["replyId"].(primitive.ObjectID).Hex()
+			}
+			pm.ReplyMessage = rm
 		}
+
+		pm.Id = v["_id"].(primitive.ObjectID).Hex()
+		if v["replyId"] != nil {
+			pm.ReplyId = v["replyId"].(primitive.ObjectID).Hex()
+		}
+
+		// pm.ForwardMessages = []*protos.MessagesForwardMessages{}
+		// for _, v := range v.ForwardMessages {
+		// 	mfm := new(protos.MessagesForwardMessages)
+		// 	mfm.Id = v.Id.Hex()
+		// 	pm.ForwardMessages = append(pm.ForwardMessages, mfm)
+		// }
 		list = append(list, pm)
 	}
 	responseData := protos.GetHistoricalMessages_Response{
@@ -325,4 +347,94 @@ func (fc *MessageController) ReadAllMessages(c *gin.Context) {
 		routeEventName["readAllMessages"],
 		&res,
 		false)
+}
+
+func (fc *MessageController) DeleteMessages(c *gin.Context) {
+	// 1、初始化返回体
+	var res response.ResponseProtobufType
+	res.Code = 200
+	log.Info("------DeleteMessages------")
+
+	// 2、获取参数
+	data := new(protos.DeleteMessages_Request)
+	var err error
+	if err = protos.DecodeBase64(c.GetString("data"), data); err != nil {
+		res.Errors(err)
+		res.Code = 10002
+		res.Call(c)
+		return
+	}
+	// 3、校验参数
+	if err = validation.ValidateStruct(
+		data,
+		validation.Parameter(&data.RoomId, validation.Type("string"), validation.Required()),
+		validation.Parameter(&data.Type, validation.Enum([]string{"AllUser", "MySelf"}), validation.Type("string"), validation.Required()),
+		validation.Parameter(&data.ExpirationTime, validation.Type("int64"), validation.Required()),
+	); err != nil || len(data.MessageIdList) == 0 {
+		res.Errors(err)
+		res.Code = 10002
+		res.Call(c)
+		return
+	}
+
+	u, isExists := c.Get("userInfo")
+	if !isExists {
+		res.Code = 10004
+		res.Call(c)
+		return
+	}
+
+	userInfo := u.(*sso.AnonymousUserInfo)
+	deviceId := c.GetString("deviceId")
+
+	if data.Type == "MySelf" {
+		// 操作所有人发的 加自己Uid
+		if err = messagesDbx.DeleteMessages(data.RoomId, data.MessageIdList, userInfo.Uid, "All", userInfo.Uid, data.ExpirationTime); err != nil {
+			res.Errors(err)
+			res.Code = 10019
+			res.Call(c)
+			return
+		}
+	} else {
+		// 操作别人发的 加自己的Uid
+		if err = messagesDbx.DeleteMessages(data.RoomId, data.MessageIdList, userInfo.Uid, "false", userInfo.Uid, data.ExpirationTime); err != nil {
+			res.Errors(err)
+			res.Code = 10019
+			res.Call(c)
+			return
+		}
+
+		// 操作自己发的 加AllUser
+		if err = messagesDbx.DeleteMessages(data.RoomId, data.MessageIdList, userInfo.Uid, "true", "AllUser", data.ExpirationTime); err != nil {
+			res.Errors(err)
+			res.Code = 10019
+			res.Call(c)
+			return
+		}
+	}
+
+	responseData := protos.DeleteMessages_Response{
+		RoomId:        data.RoomId,
+		MessageIdList: data.MessageIdList,
+		Uid:           userInfo.Uid,
+	}
+	res.Data = protos.Encode(&responseData)
+	res.Call(c)
+
+	cc := conf.SocketIO.GetConnContextByTag(namespace["chat"], "DeviceId", deviceId)
+
+	if len(cc) == 0 {
+		return
+	}
+	msc := methods.SocketConn{
+		Conn: cc[0],
+	}
+
+	if data.Type == "AllUser" {
+		// 暂定只有1v1需要加密e2ee，其他的用自己的即可
+		msc.BroadcastToRoom(data.RoomId,
+			routeEventName["deleteMessages"],
+			&res,
+			false)
+	}
 }

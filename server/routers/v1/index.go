@@ -16,7 +16,7 @@ var apiUrl = api.ApiUrls[api.ApiVersion]
 func (r Routerv1) Init() {
 	r.Group = r.Engine.Group(r.BaseUrl)
 	r.InitEncryption()
-	r.InitChat()
+	r.InitCall()
 	r.InitRoom()
 	r.InitUpload()
 	r.InitUser()
@@ -24,4 +24,5 @@ func (r Routerv1) Init() {
 	r.InitContact()
 	r.InitGroup()
 	r.IniMessage()
+	r.InitFile()
 }

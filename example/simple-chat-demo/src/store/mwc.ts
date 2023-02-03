@@ -12,11 +12,14 @@ import { MeowWhisperCoreSDK } from '../modules/MeowWhisperCoreSDK'
 import { meowWhisperCore, sakisso } from '../config'
 import { userAgent } from './user'
 import { storage } from './storage'
-import { snackbar } from '@saki-ui/core'
+import { alert, snackbar } from '@saki-ui/core'
 import { FriendItem } from './contacts'
 import createSocketioRouter from '../modules/socketio/router'
+import { GroupCache } from './group'
 
 export const modeName = 'mwc'
+
+let enErrorAlert: ReturnType<typeof alert> | undefined
 
 // export let meowWhisperCoreSDK: MeowWhisperCoreSDK | undefined
 const state: {
@@ -25,9 +28,7 @@ const state: {
 	nsocketioStatus: 'connecting' | 'connected' | 'disconnect' | 'notConnected'
 	cache: {
 		userInfo: ReturnType<typeof MeowWhisperCoreSDK.cache.new<FriendItem>>
-		group: ReturnType<
-			typeof MeowWhisperCoreSDK.cache.new<protoRoot.group.IGroup>
-		>
+		group: ReturnType<typeof MeowWhisperCoreSDK.cache.new<GroupCache>>
 	}
 } = {
 	nsocketioStatus: 'notConnected',
@@ -36,7 +37,7 @@ const state: {
 		userInfo: MeowWhisperCoreSDK.cache.new<FriendItem>({
 			label: 'UserInfo',
 		}),
-		group: MeowWhisperCoreSDK.cache.new<protoRoot.group.IGroup>({
+		group: MeowWhisperCoreSDK.cache.new<GroupCache>({
 			label: 'GroupInfo',
 		}),
 	},
@@ -94,6 +95,27 @@ export const mwcMethods = {
 		meowWhisperCoreSDK.on('encryption-status', (s) => {
 			store.dispatch(mwcSlice.actions.setEncryptionStatus(s))
 		})
+		meowWhisperCoreSDK.on('encryption-error', (s) => {
+			console.log('密钥获取错误')
+
+			if (enErrorAlert) return
+			enErrorAlert = alert({
+				title: '密钥获取失败',
+				content: '请检查下网络情况后重试呢',
+				cancelText: 'Cancel',
+				confirmText: 'Reconnect',
+				onCancel() {
+					enErrorAlert = undefined
+				},
+				onConfirm() {
+					const { mwc } = store.getState()
+					mwc.sdk?.encryption.reconnect()
+					enErrorAlert = undefined
+				},
+			})
+			enErrorAlert.open()
+			// store.dispatch(mwcSlice.actions.setEncryptionStatus(s))
+		})
 		meowWhisperCoreSDK.on('response', (res) => {
 			let message = ''
 			switch (res.code) {
@@ -126,6 +148,12 @@ export const mwcMethods = {
 					break
 				case 10013:
 					message = '路由不存在'
+					break
+				case 10009:
+					message = '加密密钥错误'
+					break
+				case 10008:
+					message = '加密密钥错误'
 					break
 				case 10002:
 					message = '参数错误'

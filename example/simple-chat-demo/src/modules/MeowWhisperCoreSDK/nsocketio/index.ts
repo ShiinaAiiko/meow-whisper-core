@@ -1,7 +1,6 @@
 import io, { Manager } from 'socket.io-client'
 import md5 from 'blueimp-md5'
 import { NEventListener, QueueLoop } from '@nyanyajs/utils'
-import { setStatus } from '../../store/encryption'
 export type ResponseData<T = any> = {
 	code: number
 	data: T
@@ -75,7 +74,7 @@ export class NSocketIoClient extends NEventListener<Status> {
 			}))
 		// console.log(this.opts)
 		try {
-			this.manager = new Manager(this.uri, this.opts)
+      this.manager = new Manager(this.uri, this.opts)
 
 			let isShowLog = false
 			this.manager?.on('connect', (attempt: any) => {

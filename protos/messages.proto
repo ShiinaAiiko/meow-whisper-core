@@ -25,11 +25,16 @@ message MessagesAudio {
 message MessagesVideo {
   int64 time = 1;
   string url = 2;
+  int64 width = 3;
+  int64 height = 4;
 }
-message MessagesImage { string url = 1; }
+message MessagesImage {
+  string url = 1;
+  int64 width = 2;
+  int64 height = 3;
+}
 
 message MessagesCall {
-  message MessagesCallParticipants { string uid = 1; }
   // Status:
   // 1 connected successfully
   // 0 calling
@@ -44,16 +49,22 @@ message MessagesCall {
   int64 time = 5;
 }
 
+message MessagesAtUsers { string uid = 1; }
+message MessagesReadUsers { string uid = 1; }
+message MessagesForwardMessages { string id = 1; }
+
 message Messages {
+
   string id = 1;
   // RoomId md5(appId+groupId/appId+authorId+friendId)
   string roomId = 2;
   string authorId = 3;
   string replyId = 4;
-  repeated string atUserIds = 5;
-  repeated string readUserIds = 6;
+  Messages replyMessage = 16;
+  repeated MessagesAtUsers atUsers = 5;
+  repeated MessagesReadUsers readUsers = 6;
   // 转发一堆聊天记录、（预留）
-  repeated string forwardChatIds = 7;
+  repeated MessagesForwardMessages forwardMessages = 7;
   string message = 8;
   MessagesAudio audio = 9;
   MessagesVideo video = 10;
@@ -63,6 +74,7 @@ message Messages {
   // 预留限时消息
   int64 deadlineTime = 14;
   int64 recallTime = 15;
+  int64 editTime = 17;
 }
 
 message GetRecentChatDialogueList {
@@ -117,10 +129,10 @@ message SendMessage {
     string roomId = 2;
     string authorId = 3;
     string replyId = 4;
-    repeated int64 atUserIds = 5;
-    repeated int64 readUserIds = 6;
+    repeated MessagesAtUsers atUsers = 5;
+    repeated MessagesReadUsers readUsers = 6;
     // 转发一堆聊天记录、（预留）
-    repeated string forwardChatIds = 7;
+    repeated MessagesForwardMessages forwardMessages = 7;
     string message = 8;
     MessagesAudio audio = 9;
     MessagesVideo video = 10;
@@ -128,6 +140,17 @@ message SendMessage {
     MessagesCall call = 12;
     // type Group/Contact
     string type = 13;
+  }
+  message Response { Messages message = 1; }
+}
+
+// socketio api
+message EditMessage {
+  message Request {
+    string roomId = 1;
+    string messageId = 2;
+    string authorId = 3;
+    string message = 4;
   }
   message Response { Messages message = 1; }
 }
@@ -167,5 +190,94 @@ message ReadAllMessages {
   message Response {
     string roomId = 1;
     string uid = 2;
+  }
+}
+
+// 自己的能删除所有人
+// 别人的只能删除自己
+message DeleteMessages {
+  message Request {
+    string roomId = 1;
+    // 包含 AllMessages 则是全部删除
+    repeated string messageIdList = 2;
+    // AllUser / Myself
+    string type = 3;
+    int64 expirationTime = 4;
+  }
+  // 删除所有人的则必须socket提醒对方，将对方自己的消息删除
+  message Response {
+    // 包含 AllMessages 则是全部删除
+    string roomId = 1;
+    repeated string messageIdList = 2;
+    // 谁删除的
+    string uid = 3;
+  }
+}
+
+// 包括自己也在内
+message MessagesCallParticipants {
+  string uid = 1;
+  bool caller = 2;
+}
+
+message StartCalling {
+  message Request {
+    string roomId = 1;
+    string type = 2;
+    repeated MessagesCallParticipants participants = 3;
+  }
+  message Response {
+    string roomId = 1;
+    string type = 2;
+    repeated MessagesCallParticipants participants = 3;
+    // socket路由参数
+    string currentUserId = 4;
+    string callToken = 5;
+  }
+}
+
+// 中途加入 预留
+message JoinCalling {
+  message Request {
+    string roomId = 1;
+    string type = 2;
+    repeated MessagesCallParticipants participants = 3;
+  }
+  message Response {
+    string roomId = 1;
+    string type = 2;
+    repeated MessagesCallParticipants participants = 3;
+    // socket路由参数
+    string currentUserId = 6;
+  }
+}
+
+message Hangup {
+  message Request {
+    string roomId = 1;
+    string type = 2;
+    repeated MessagesCallParticipants participants = 3;
+
+    // // 当最后一个人再发生这些信息，用于发条消息
+    // // 且以打进电话人的名义发送
+    // bool send = 4;
+
+    // 1 connected successfully
+    // 0 calling
+    // -1 Missing call
+    // -2 Other devices calling
+    // -3 Invite to join the call
+    int64 status = 5;
+    int64 callTime = 6;
+  }
+  // socket直接发给所有人，然后在顶部提示正在语音聊天。参与人则跳提醒
+  message Response {
+    string roomId = 1;
+    string type = 2;
+    repeated MessagesCallParticipants participants = 3;
+    // socket路由参数
+    string currentUserId = 4;
+    int64 status = 5;
+    int64 callTime = 6;
   }
 }

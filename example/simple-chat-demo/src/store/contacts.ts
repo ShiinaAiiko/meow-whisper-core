@@ -87,6 +87,8 @@ export const contactsMethods = {
 				mwc.cache.userInfo?.set(v.userInfo?.uid || '', v)
 			})
 			thunkAPI.dispatch(contactsSlice.actions.setContacts(list))
+		} else {
+			thunkAPI.dispatch(contactsSlice.actions.setContacts([]))
 		}
 		thunkAPI.dispatch(contactsSlice.actions.setIsInit(true))
 	}),
@@ -200,7 +202,7 @@ export const contactsMethods = {
 
 			await thunkAPI.dispatch(contactsMethods.getContactList())
 		}
-  }),
+	}),
 	getUserCache: createAsyncThunk<
 		void,
 		string[],
@@ -211,8 +213,8 @@ export const contactsMethods = {
 		const { mwc, user, contacts } = thunkAPI.getState()
 
 		let list: string[] = []
-    Array.from(new Set(uids)).forEach((v) => {
-      if (!mwc.cache.userInfo.get(v)) {
+		Array.from(new Set(uids)).forEach((v) => {
+			if (!mwc.cache.userInfo.get(v)) {
 				list = list.concat([v])
 			}
 		})

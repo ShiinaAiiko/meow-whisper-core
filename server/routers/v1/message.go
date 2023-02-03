@@ -32,4 +32,8 @@ func (r Routerv1) IniMessage() {
 		role.SetRole(apiUrl["readAllMessages"], &protoOption),
 		c.ReadAllMessages)
 
+	r.Group.POST(
+		role.SetRole(apiUrl["deleteMessages"], &protoOption),
+		c.DeleteMessages)
+
 }

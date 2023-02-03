@@ -153,6 +153,24 @@ export let eventTarget = new EventTarget()
 type DeviceType = 'Mobile' | 'Pad' | 'PC'
 export let deviceType: DeviceType | undefined
 
+let call: {
+	type: 'Audio' | 'Video'
+	uid: string
+	roomId: string
+	participatingUsers: string[]
+	enable: boolean
+	showModal: boolean
+	showSmallWindow: boolean
+} = {
+	type: 'Audio',
+	uid: '',
+	participatingUsers: [],
+	roomId: '',
+	enable: false,
+	showModal: false,
+	showSmallWindow: false,
+}
+
 let initialState = {
 	layout: {
 		backIcon: false,
@@ -174,6 +192,7 @@ let initialState = {
 	pageConfig: {
 		disableChangeValue: false,
 		settingPage: {
+			visible: false,
 			settingType: '',
 		},
 		indexPage: {
@@ -242,6 +261,14 @@ let initialState = {
 		contacts: 0,
 		notifications: 0,
 	},
+  inApp: false,
+  notification: {
+    enable:false,
+    // -1 关闭 0 离开后通知 1 实时通知
+    leval: 0,
+    // -1 关闭 0 离开后通知 1 实时通知
+    sound: 0,
+  }
 }
 
 export const configSlice = createSlice({
@@ -285,6 +312,9 @@ export const configSlice = createSlice({
 		},
 		setSettingType: (state, params: ActionParams<string>) => {
 			state.pageConfig.settingPage.settingType = params.payload
+		},
+		setSettingVisible: (state, params: ActionParams<boolean>) => {
+			state.pageConfig.settingPage.visible = params.payload
 		},
 		setDisableChangeValue: (state, params: ActionParams<boolean>) => {
 			state.pageConfig.disableChangeValue = params.payload
@@ -403,6 +433,18 @@ export const configSlice = createSlice({
 			}>
 		) => {
 			state.count[params.payload.type] = params.payload.value
+		},
+		setInApp: (state, params: ActionParams<typeof initialState['inApp']>) => {
+			state.inApp = params.payload
+		},
+		setNotificationEnable: (state, params: ActionParams<typeof initialState["notification"]["enable"]>) => {
+			state.notification.enable = params.payload
+		},
+		setNotificationLeval: (state, params: ActionParams<typeof initialState["notification"]["leval"]>) => {
+			state.notification.leval = params.payload
+		},
+		setNotificationSound: (state, params: ActionParams<typeof initialState["notification"]["sound"]>) => {
+			state.notification.sound = params.payload
 		},
 	},
 })

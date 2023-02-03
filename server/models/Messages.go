@@ -34,14 +34,24 @@ type MessagesVideo struct {
 	// Time Unix timestamp
 	Time int64 `bson:"time" json:"time"`
 	// Url
-	Url string `bson:"url" json:"url"`
+	Url    string `bson:"url" json:"url"`
+	Width  int64  `bson:"width" json:"width"`
+	Height int64  `bson:"height" json:"height"`
 }
 type MessagesImage struct {
+	// Url
+	Url    string `bson:"url" json:"url"`
+	Width  int64  `bson:"width" json:"width"`
+	Height int64  `bson:"height" json:"height"`
+}
+type MessagesFile struct {
 	// Url
 	Url string `bson:"url" json:"url"`
 }
 type MessagesCallParticipants struct {
-	Uid int64 `bson:"uid" json:"uid"`
+	Uid string `bson:"uid" json:"uid"`
+	// 发起人与否
+	Caller bool `bson:"caller" json:"caller"`
 }
 type MessagesCall struct {
 	// Status:
@@ -54,33 +64,49 @@ type MessagesCall struct {
 	// RoomId
 	RoomId string `bson:"roomId" json:"roomId"`
 	// Participants UID
-	Participants []MessagesCallParticipants `bson:"participants" json:"participants"`
-	// GroupId, pick one of two
-	GroupId int64 `bson:"groupId" json:"groupId"`
-	// Initiator
-	AuthorId int64 `bson:"authorId" json:"authorId"`
+	Participants []*MessagesCallParticipants `bson:"participants" json:"participants"`
 	// Type: Audio Video ScreenShare
 	Type string `bson:"type" json:"type"`
 	// Time Unix timestamp
 	Time int64 `bson:"time" json:"time"`
 }
+type MessagesAtUsers struct {
+	Uid string `bson:"uid" json:"uid"`
+}
+type MessagesReadUsers struct {
+	Uid string `bson:"uid" json:"uid"`
+}
+type MessagesDeletedUsers struct {
+	// 如果有个uid是"AllUser",则是所有人都不可见
+	Uid string `bson:"uid" json:"uid"`
+	// Forever 100 years
+	// （预留，暂时永久。按天数来，每天4点将到期的消息恢复
+	ExpirationTime int64 `bson:"expirationTime" json:"expirationTime"`
+}
+type MessagesForwardMessages struct {
+	// MessageId
+	Id primitive.ObjectID `bson:"id" json:"id,omitempty"`
+}
 
 type Messages struct {
 	Id primitive.ObjectID `bson:"_id" json:"id,omitempty"`
 	// RoomId md5(appId+groupId/appId+authorId+friendId)
-	RoomId      string             `bson:"roomId" json:"roomId,omitempty"`
-	AuthorId    string             `bson:"authorId" json:"authorId"`
-	ReplyId     primitive.ObjectID `bson:"replyId,omitempty" json:"replyId"`
-	AtUserIds   []string           `bson:"atUserIds" json:"atUserIds"`
-	ReadUserIds []string           `bson:"readUserIds" json:"readUserIds"`
+	RoomId   string             `bson:"roomId" json:"roomId,omitempty"`
+	AuthorId string             `bson:"authorId" json:"authorId"`
+	ReplyId  primitive.ObjectID `bson:"replyId,omitempty" json:"replyId"`
+
+	AtUsers   []*MessagesAtUsers   `bson:"atUsers" json:"atUsers"`
+	ReadUsers []*MessagesReadUsers `bson:"readUsers" json:"readUsers"`
 	// 转发一堆聊天记录、（预留）
-	ForwardChatIds []primitive.ObjectID `bson:"forwardChatIds" json:"forwardChatIds"`
-	Message        string               `bson:"message" json:"message"`
-	Audio          MessagesAudio        `bson:"audio" json:"audio"`
-	Video          MessagesVideo        `bson:"video" json:"video"`
-	Image          MessagesImage        `bson:"image" json:"image"`
-	Call           MessagesCall         `bson:"call" json:"call"`
-	DeletedUserIds []string             `bson:"deletedUserIds" json:"deletedUserIds"`
+	ForwardMessages []*MessagesForwardMessages `bson:"forwardMessages" json:"forwardMessages"`
+	Message         string                     `bson:"message" json:"message"`
+	Audio           *MessagesAudio             `bson:"audio" json:"audio"`
+	Video           *MessagesVideo             `bson:"video" json:"video"`
+	Image           *MessagesImage             `bson:"image" json:"image"`
+	Call            *MessagesCall              `bson:"call" json:"call"`
+	// 预留
+	File         *MessagesFile           `bson:"file" json:"file"`
+	DeletedUsers []*MessagesDeletedUsers `bson:"deletedUsers" json:"deletedUsers"`
 	// Status:
 	// 1 normal
 	// 0 recall
@@ -89,6 +115,7 @@ type Messages struct {
 	CreateTime   int64 `bson:"createTime" json:"createTime"`
 	DeadlineTime int64 `bson:"deadlineTime" json:"deadlineTime"`
 	RecallTime   int64 `bson:"recallTime" json:"recallTime"`
+	EditTime     int64 `bson:"editTime" json:"editTime"`
 }
 
 func (cr *Messages) GetCollectionName() string {
@@ -100,11 +127,11 @@ func (cr *Messages) Default() error {
 		cr.Id = primitive.NewObjectID()
 	}
 	unixTimeStamp := time.Now().Unix()
-	if cr.AtUserIds == nil {
-		cr.AtUserIds = []string{}
+	if cr.AtUsers == nil {
+		cr.AtUsers = []*MessagesAtUsers{}
 	}
-	if cr.ForwardChatIds == nil {
-		cr.ForwardChatIds = []primitive.ObjectID{}
+	if cr.ForwardMessages == nil {
+		cr.ForwardMessages = []*MessagesForwardMessages{}
 	}
 	// if cr.ReplyId == primitive.NilObjectID {
 	// 	cr.ReplyId = primitive.NewObjectID()
@@ -113,11 +140,33 @@ func (cr *Messages) Default() error {
 		cr.Status = 1
 	}
 
-	if cr.ReadUserIds == nil {
-		cr.ReadUserIds = []string{}
+	if cr.Audio == nil {
+		cr.Audio = &MessagesAudio{}
 	}
-	if cr.DeletedUserIds == nil {
-		cr.DeletedUserIds = []string{}
+	if cr.Video == nil {
+		cr.Video = &MessagesVideo{}
+	}
+	if cr.Image == nil {
+		cr.Image = &MessagesImage{}
+	}
+	if cr.Call == nil {
+		cr.Call = &MessagesCall{}
+	}
+	if cr.File == nil {
+		cr.File = &MessagesFile{}
+	}
+
+	if cr.ReadUsers == nil {
+		cr.ReadUsers = []*MessagesReadUsers{}
+	}
+	if cr.ReadUsers == nil {
+		cr.ReadUsers = []*MessagesReadUsers{}
+	}
+	if cr.ReadUsers == nil {
+		cr.ReadUsers = []*MessagesReadUsers{}
+	}
+	if cr.DeletedUsers == nil {
+		cr.DeletedUsers = []*MessagesDeletedUsers{}
 	}
 	if cr.CreateTime == 0 {
 		cr.CreateTime = unixTimeStamp
@@ -127,6 +176,9 @@ func (cr *Messages) Default() error {
 	}
 	if cr.RecallTime == 0 {
 		cr.RecallTime = -1
+	}
+	if cr.EditTime == 0 {
+		cr.EditTime = -1
 	}
 
 	if err := cr.Validate(); err != nil {

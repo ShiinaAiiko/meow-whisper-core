@@ -112,6 +112,7 @@ func Encryption() gin.HandlerFunc {
 					}
 					aes.Key = deKey.String()
 				}
+				// log.Info("tempAesKey", tempAesKey)
 				// 当利用Public AESKey生成UID的Key存在的时候
 				if key != "" && tempAesKey == "" {
 					getAesKey := conf.EncryptionClient.GetUserAesKeyByKey(conf.Redisdb, key)
@@ -143,8 +144,10 @@ func Encryption() gin.HandlerFunc {
 					c.Abort()
 					return
 				}
+				// log.Info((len(data)))
 
 				deStr, deStrErr := aes.DecryptWithString(data, "")
+				// log.Info("deStr", len(deStr.String()))
 				if deStrErr != nil {
 					res.Data = "[Encryption aes.DecryptWithString]" + deStrErr.Error()
 					res.Code = 10008
@@ -161,7 +164,7 @@ func Encryption() gin.HandlerFunc {
 					return
 				}
 
-				// log.Info("dataMap", dataMap)
+				// log.Info("dataMap", len(dataMap["data"].(string)))
 				// 为Gin请求体赋值
 				for key, item := range dataMap {
 					c.Set(key, item)

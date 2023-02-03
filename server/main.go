@@ -14,6 +14,7 @@ import (
 
 	"github.com/cherrai/nyanyago-utils/nlog"
 	"github.com/cherrai/nyanyago-utils/nredis"
+	"github.com/cherrai/nyanyago-utils/saass"
 	sso "github.com/cherrai/saki-sso-go"
 
 	// sfu "github.com/pion/ion-sfu/pkg/sfu"
@@ -27,9 +28,9 @@ var (
 
 func main() {
 	nlog.SetPrefixTemplate("[{{Timer}}] [{{Count}}] [{{Type}}] [{{File}}]@{{Name}}")
-	nlog.SetName("github.com/ShiinaAiiko/meow-whisper-core")
+	nlog.SetName("meow-whisper-core")
 	// nlog.SetFullFileName(true)
-	nlog.SetFileNameLength(30)
+	nlog.SetFileNameLength(20)
 	nlog.SetTimeDigits(3)
 
 	// type User struct {
@@ -137,6 +138,12 @@ func main() {
 			Password: conf.Config.Redis.Password,
 			DB:       conf.Config.Redis.DB,
 		},
+	})
+	conf.SAaSS = saass.New(&saass.Options{
+		AppId:      conf.Config.Saass.AppId,
+		AppKey:     conf.Config.Saass.AppKey,
+		BaseUrl:    conf.Config.Saass.BaseUrl,
+		ApiVersion: conf.Config.Saass.ApiVersion,
 	})
 
 	// Test()

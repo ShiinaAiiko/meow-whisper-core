@@ -16,16 +16,18 @@ import { alert, snackbar } from '@saki-ui/core'
 
 export const modeName = 'group'
 
-export interface GroupCache {}
+export interface GroupCache extends protoRoot.group.IGroup {
+	membersList: protoRoot.group.IGroupMembers[]
+}
 
 // export let meowWhisperCoreSDK: MeowWhisperCoreSDK | undefined
 
 const state: {
-	list: protoRoot.group.IGroup[]
+	list: GroupCache[]
 	isInit: boolean
 	// 不删除 只新增
 	mapList: {
-		[k: string]: protoRoot.group.IGroup
+		[k: string]: GroupCache
 	}
 } = {
 	list: [],
@@ -41,7 +43,7 @@ export const groupSlice = createSlice({
 		setIsInit: (state, params: ActionParams<typeof state['isInit']>) => {
 			state.isInit = params.payload
 		},
-		setGroup: (state, params: ActionParams<typeof state['list']>) => {
+		setGroupList: (state, params: ActionParams<typeof state['list']>) => {
 			state.list = params.payload
 			state.list.forEach((v) => {
 				state.mapList[v.id || ''] = v
@@ -62,10 +64,53 @@ export const groupMethods = {
 		const getGroupList = await mwc.sdk?.api.group.getAllJoinedGroups()
 		console.log('getGroupList', user, getGroupList)
 		if (getGroupList?.code === 200 && getGroupList.data?.list?.length) {
-			getGroupList.data.list.forEach((v) => {
+			let list = getGroupList.data.list.map((v) => {
+				return {
+					...v,
+					membersList: [],
+				}
+			})
+			list.forEach((v) => {
 				mwc.cache.group?.set(v.id || '', v)
 			})
-			thunkAPI.dispatch(groupSlice.actions.setGroup(getGroupList.data.list))
+			thunkAPI.dispatch(groupSlice.actions.setGroupList(list))
+		} else {
+			thunkAPI.dispatch(groupSlice.actions.setGroupList([]))
+		}
+		thunkAPI.dispatch(groupSlice.actions.setIsInit(true))
+	}),
+	getGroupMembers: createAsyncThunk<
+		void,
+		{
+			groupId: string
+		},
+		{
+			state: RootState
+		}
+	>(modeName + '/getGroupMembers', async ({ groupId }, thunkAPI) => {
+		const { mwc, user, group } = thunkAPI.getState()
+		const getGroupMembers = await mwc.sdk?.api.group.getGroupMembers({
+			groupId,
+		})
+		console.log('getGroupMembers', user, getGroupMembers)
+		if (getGroupMembers?.code === 200 && getGroupMembers.data?.list?.length) {
+			thunkAPI.dispatch(
+				groupSlice.actions.setGroupList(
+					group.list.map((v) => {
+						console.log(v.id === groupId)
+						if (v.id === groupId) {
+							let t = {
+								...v,
+								membersList: getGroupMembers.data.list || [],
+							}
+							mwc.cache.group?.set(v.id || '', t)
+							return t
+						}
+						return v
+					})
+				)
+			)
+			console.log(mwc.cache.group?.get(groupId || ''))
 		}
 		thunkAPI.dispatch(groupSlice.actions.setIsInit(true))
 	}),
@@ -102,7 +147,7 @@ export const groupMethods = {
 					}).open()
 
 					thunkAPI.dispatch(
-						groupSlice.actions.setGroup(
+						groupSlice.actions.setGroupList(
 							group.list.filter((v) => v.id !== groupId)
 						)
 					)
@@ -144,7 +189,7 @@ export const groupMethods = {
 						color: '#fff',
 					}).open()
 					thunkAPI.dispatch(
-						groupSlice.actions.setGroup(
+						groupSlice.actions.setGroupList(
 							group.list.filter((v) => v.id !== groupId)
 						)
 					)

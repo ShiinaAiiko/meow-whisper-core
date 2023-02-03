@@ -123,6 +123,12 @@ type ResponseType struct {
 type H map[string]interface{}
 type Any *anypb.Any
 
+func (res *ResponseType) Errors(err error) {
+	if err != nil {
+		res.Error = err.Error()
+	}
+}
+
 func (res *ResponseType) Call(c *gin.Context) {
 
 	// Log.Info("setResponse", res.GetResponse())
@@ -205,6 +211,14 @@ func (res *ResponseType) GetResponse() *ResponseType {
 		res.Msg = "Failed to create group."
 		res.CnMsg = "创建群组失败"
 		break
+	case 10203:
+		res.Msg = "Call token verification failed."
+		res.CnMsg = "通话令牌校验失败"
+		break
+	case 10202:
+		res.Msg = "non-author."
+		res.CnMsg = "非作者"
+		break
 	case 10201:
 		res.Msg = "Failed to send message."
 		res.CnMsg = "发送信息失败"
@@ -245,6 +259,10 @@ func (res *ResponseType) GetResponse() *ResponseType {
 	// 	res.Msg = "Invalid request."
 	// 	res.CnMsg = "无效请求"
 	// 	break
+	case 10019:
+		res.Msg = "Delete failed."
+		res.CnMsg = "删除失败"
+		break
 	case 10018:
 		res.Msg = "Application token creation failed."
 		res.CnMsg = "应用Token创建失败"

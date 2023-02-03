@@ -36,6 +36,7 @@ declare global {
 			'saki-chat-layout-side-navigator': any
 			'saki-chat-layout-bottom-navigator': any
 			'saki-chat-layout-side-navigator-menu-item': any
+			'saki-chat-layout-bottom-navigator-item': any
 			'saki-page-main': any
 			'saki-page-header': any
 			'saki-icon': any
@@ -52,6 +53,20 @@ declare global {
 			'saki-chat-message-header': any
 			'saki-chat-input-bar': any
 			'saki-chat-bubble': any
+			'saki-call-container': any
+			'saki-call-header': any
+			'saki-call-main-video': any
+			'saki-call-main-video': any
+			'saki-call-info': any
+			'saki-call-mini-video': any
+			'saki-call-footer': any
+			'saki-floating-container': any
+			'saki-call-floating': any
+			'saki-chat-bubble-file': any
+			'saki-chat-select': any
+      'saki-chat-reply': any
+      'saki-chat-edit': any
+      "saki-chat-bubble-reply":any
 		}
 	}
 	namespace Window {

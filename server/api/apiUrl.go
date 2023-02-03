@@ -54,9 +54,16 @@ var ApiUrls = map[string](map[string]string){
 		// 可以根据时间范围筛选
 		"getHistoricalMessages": "/message/historical/list/get",
 		"readAllMessages":       "/message/read/all",
+		"deleteMessages":        "/message/delete",
 
 		// User
 		// 传入ID数组，返用户数组
 		"getUserInfoList": "/user/info/list/get",
+
+		// File
+		"getUploadFileToken": "/file/uplpad/token/get",
+
+		// call
+		"verifyCallToken": "/call/token/verify",
 	},
 }

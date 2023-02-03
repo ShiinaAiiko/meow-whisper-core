@@ -3,8 +3,10 @@ package dbxV1
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/ShiinaAiiko/meow-whisper-core/models"
+	"github.com/cherrai/nyanyago-utils/narrays"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -35,11 +37,11 @@ func (d *MessagesDbx) GetAllUnredMessages(roomIds []string, authorId string) ([]
 						"roomId": bson.M{
 							"$in": roomIds,
 						},
-						"readUserIds": bson.M{
+						"readUsers.uid": bson.M{
 							"$nin": []string{authorId},
 						},
-						"deletedUserIds": bson.M{
-							"$nin": []string{authorId},
+						"deletedUsers.uid": bson.M{
+							"$nin": []string{authorId, "AllUser"},
 						},
 						"status": bson.M{
 							"$in": []int64{1},
@@ -114,7 +116,7 @@ func (d *MessagesDbx) GetHistoricalMessages(
 	pageNum,
 	pageSize,
 	startTime,
-	endTime int64) ([]*models.Messages, error) {
+	endTime int64) ([]bson.M, error) {
 	m := new(models.Messages)
 
 	params := []bson.M{
@@ -123,8 +125,8 @@ func (d *MessagesDbx) GetHistoricalMessages(
 				"$and": []bson.M{
 					{
 						"roomId": roomId,
-						"deletedUserIds": bson.M{
-							"$nin": []string{authorId},
+						"deletedUsers.uid": bson.M{
+							"$nin": []string{authorId, "AllUser"},
 						},
 						"status": bson.M{
 							"$in": []int64{1},
@@ -151,10 +153,17 @@ func (d *MessagesDbx) GetHistoricalMessages(
 		},
 		{
 			"$limit": pageSize,
+		}, {
+			"$lookup": bson.M{
+				"from":         "Messages",
+				"localField":   "replyId",
+				"foreignField": "_id",
+				"as":           "replyMessage",
+			},
 		},
 	}
-	log.Info("params", params)
-	var results []*models.Messages
+	// log.Info("params", params)
+	var results []bson.M
 	opts, err := m.GetCollection().Aggregate(context.TODO(), params)
 	if err != nil {
 		// log.Error(err)
@@ -177,7 +186,7 @@ func (d *MessagesDbx) ReadAllMessages(
 			"authorId": bson.M{
 				"$ne": authorId,
 			},
-			"readUserIds": bson.M{
+			"readUsers.uid": bson.M{
 				"$nin": []string{authorId},
 			},
 			"status": bson.M{
@@ -185,7 +194,88 @@ func (d *MessagesDbx) ReadAllMessages(
 			},
 		}, bson.M{
 			"$push": bson.M{
-				"readUserIds": authorId,
+				"readUsers": bson.M{
+					"uid": authorId,
+				},
+			},
+		}, options.Update().SetUpsert(false))
+
+	if err != nil {
+		return err
+	}
+	if result.ModifiedCount == 0 {
+		return errors.New("delete failed")
+	}
+	return nil
+}
+
+func (d *MessagesDbx) EditMessage(
+	id primitive.ObjectID, roomId, authorId, message string,
+) *models.Messages {
+	m := new(models.Messages)
+	t := time.Now().Unix()
+	err := m.GetCollection().FindOneAndUpdate(context.TODO(),
+		bson.M{
+			"_id":      id,
+			"roomId":   roomId,
+			"authorId": authorId,
+		}, bson.M{
+			"$set": bson.M{
+				"message":  message,
+				"editTime": t,
+			},
+		}, options.FindOneAndUpdate().SetUpsert(false)).Decode(m)
+
+	if err != nil {
+		return nil
+	}
+	m.Message = message
+	m.EditTime = t
+	return m
+}
+
+func (d *MessagesDbx) DeleteMessages(
+	roomId string, messageIdList []string, authorId string, isAuthor string, deleteUid string, expirationTime int64,
+) error {
+	m := new(models.Messages)
+	filter := bson.M{
+		"roomId": roomId,
+		"deletedUsers.uid": bson.M{
+			"$nin": []string{authorId, "AllUser"},
+		},
+		"status": bson.M{
+			"$in": []int64{1, 0},
+		},
+	}
+	if !narrays.Includes(messageIdList, "AllMessages") {
+		list := []primitive.ObjectID{}
+		for _, v := range messageIdList {
+			id, _ := primitive.ObjectIDFromHex(v)
+			list = append(list, id)
+		}
+		filter["_id"] = bson.M{
+			"$in": list,
+		}
+	}
+	if isAuthor == "true" {
+		filter["authorId"] = authorId
+	}
+	if isAuthor == "false" {
+		filter["authorId"] = bson.M{
+			"$ne": authorId,
+		}
+	}
+	update := bson.M{
+		"uid":            deleteUid,
+		"expirationTime": expirationTime,
+	}
+
+	log.Info(filter)
+	log.Info(update)
+	result, err := m.GetCollection().UpdateMany(context.TODO(),
+		filter, bson.M{
+			"$push": bson.M{
+				"deletedUsers": update,
 			},
 		}, options.Update().SetUpsert(false))
 

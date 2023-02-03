@@ -122,6 +122,24 @@ const NewGroupComponent = ({
 			>
 				{isSelectMembers ? (
 					<SelectMembersComponent
+						title='Add Members'
+						members={
+							contacts.list.map((v) => {
+								return {
+									uid: v.userInfo?.uid || '',
+									avatar: v.userInfo?.avatar || '',
+									nickname: v.userInfo?.nickname || '',
+									bio:
+										(v?.lastSeenTime || 0) > 0
+											? mwc.sdk?.methods.getLastSeenTime(
+													Number(v.lastSeenTime)
+											  ) || ''
+											: '',
+									selected: false,
+									lastSeenTime: '',
+								}
+							}) || []
+						}
 						onCancel={(e) => {
 							if (!createButtonLoading) {
 								setIsSelectMembers(false)

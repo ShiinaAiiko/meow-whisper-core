@@ -4,7 +4,7 @@ import { initReactI18next } from 'react-i18next'
 const resources = {
 	'zh-CN': {
 		common: {
-			appTitle: '喵言私语 · 简易聊天',
+			appTitle: '喵言私语',
 			language: '多语言',
 			openDevtools: '开发者工具',
 			quit: '退出',
@@ -119,7 +119,7 @@ const resources = {
 	},
 	'zh-TW': {
 		common: {
-			appTitle: '喵言私語 · 簡易聊天',
+			appTitle: '喵言私語',
 			language: '多語言',
 			openDevtools: '開發者工具',
 			quit: '退出',
@@ -234,7 +234,7 @@ const resources = {
 	},
 	'en-US': {
 		common: {
-			appTitle: 'Meow Whisper · Simple Chat',
+			appTitle: 'Meow Whisper',
 			language: 'Language',
 			openDevtools: 'Open devtools',
 			quit: 'Quit',

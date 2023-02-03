@@ -98,65 +98,76 @@ function App() {
 	// console.log('isDev', isDev)
 
 	useEffect(() => {
-		store.dispatch(storageSlice.actions.init("0"))
-		// console.log('process.env.NODE_ENV', process.env.NODE_ENV)
-		if (
-			window &&
-			window.process &&
-			window.process.versions &&
-			window.process.versions['electron']
-		) {
-			console.log(window.location)
-			console.log('electronelectron', window.require('electron'))
-		}
+		debounce.increase(async () => {
+			store.dispatch(storageSlice.actions.init('0'))
+			// console.log('process.env.NODE_ENV', process.env.NODE_ENV)
+			if (
+				window &&
+				window.process &&
+				window.process.versions &&
+				window.process.versions['electron']
+			) {
+				console.log(window.location)
+				console.log('electronelectron', window.require('electron'))
+			}
 
-		if (isDev) {
-			let currentKey: {
-				[key: string]: string
-			} = {}
+			if (isDev) {
+				let currentKey: {
+					[key: string]: string
+				} = {}
 
-			window.addEventListener('keydown', (e) => {
-				// console.log('keydown', e.key)
-				if (e.key === 'r' || e.key === 'Control') {
-					currentKey[e.key] = e.key
-				}
-				if (currentKey['r'] && currentKey['Control']) {
-					window.location.reload()
-					delete currentKey['r']
-					delete currentKey['Control']
-				}
-			})
-			window.addEventListener('keyup', (e) => {
-				if (e.key === 'r' || e.key === 'Control') {
-					delete currentKey[e.key]
-				}
-			})
-		} else {
-			// console.log = () => {}
-		}
-
-		window.addEventListener('resize', () => {
-			store.dispatch(methods.config.getDeviceType())
-		})
-		window.addEventListener('load', () => {
-			store.dispatch(methods.config.getDeviceType())
-		})
-
-		async function isOnline() {
-			try {
-				const res = await axios({
-					url: networkTestUrl,
-					method: 'HEAD',
+				window.addEventListener('keydown', (e) => {
+					// console.log('keydown', e.key)
+					if (e.key === 'r' || e.key === 'Control') {
+						currentKey[e.key] = e.key
+					}
+					if (currentKey['r'] && currentKey['Control']) {
+						window.location.reload()
+						delete currentKey['r']
+						delete currentKey['Control']
+					}
 				})
-				if (res.status === 200) {
-					return true
-				} else {
+				window.addEventListener('keyup', (e) => {
+					if (e.key === 'r' || e.key === 'Control') {
+						delete currentKey[e.key]
+					}
+				})
+			} else {
+				// console.log = () => {}
+			}
+
+			window.addEventListener('focus', () => {
+        console.log('focus')
+        store.dispatch(configSlice.actions.setInApp(true))
+			})
+			window.addEventListener('blur', () => {
+				console.log('blur')
+        store.dispatch(configSlice.actions.setInApp(false))
+			})
+
+			window.addEventListener('resize', () => {
+				store.dispatch(methods.config.getDeviceType())
+			})
+			window.addEventListener('load', () => {
+				store.dispatch(methods.config.getDeviceType())
+			})
+
+			async function isOnline() {
+				try {
+					const res = await axios({
+						url: networkTestUrl,
+						method: 'HEAD',
+					})
+					if (res.status === 200) {
+						return true
+					} else {
+						return false
+					}
+				} catch (error) {
 					return false
 				}
-			} catch (error) {
-				return false
 			}
-		}
+		}, 10)
 	}, [])
 	console.log('meowApps?.jsurl ', meowApps?.jsurl)
 	return (

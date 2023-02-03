@@ -186,6 +186,11 @@ const HeaderComponent = () => {
 								selectvalue: async (e) => {
 									console.log(e.detail.value)
 									switch (e.detail.value) {
+										case 'Settings':
+											// history?.('/settings')
+
+											dispatch(configSlice.actions.setSettingVisible(true))
+											break
 										case 'Logout':
 											dispatch(userSlice.actions.logout({}))
 											break
@@ -197,6 +202,24 @@ const HeaderComponent = () => {
 								},
 							})}
 						>
+							<saki-menu-item
+								width='150px'
+								padding='10px 18px'
+								value={'Settings'}
+							>
+								<div className='qv-h-r-u-item'>
+									<saki-icon
+										color='#666'
+										type='Settings'
+										margin='0 6px 0 0'
+									></saki-icon>
+									<span>
+										{t('title', {
+											ns: 'settings',
+										})}
+									</span>
+								</div>
+							</saki-menu-item>
 							<saki-menu-item
 								width='150px'
 								padding='10px 18px'

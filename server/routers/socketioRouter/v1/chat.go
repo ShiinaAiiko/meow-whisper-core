@@ -20,6 +20,9 @@ func (v *V1) InitChat() {
 
 	R(r.Chat, requestEventName["joinRoom"], c.JoinRoom)
 	R(r.Chat, requestEventName["sendMessage"], c.SendMessage)
+	R(r.Chat, requestEventName["editMessage"], c.EditMessage)
+	R(r.Chat, requestEventName["startCalling"], c.StartCalling)
+	R(r.Chat, requestEventName["hangup"], c.Hangup)
 	// R(r.Chat, "PostChatMessage", socketIoControllersV1.PostChatMessage)
 	// R(r.Chat, "StartCalling", socketIoControllersV1.StartCalling)
 	// R(r.Chat, "Hangup", socketIoControllersV1.Hangup)

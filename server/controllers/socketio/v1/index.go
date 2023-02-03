@@ -130,7 +130,7 @@ func (bc *BaseController) Connect(e *nsocketio.EventInstance) error {
 		log.Info("/ UID " + getUser.UserInfo.Uid + ", Connection to Successful.")
 
 		c.SetSessionCache("loginTime", time.Now().Unix())
-		c.SetSessionCache("appId", getUser.AppId)
+		c.SetSessionCache("appId", queryData.AppId)
 		c.SetSessionCache("userInfo", &getUser.UserInfo)
 		c.SetSessionCache("deviceId", queryData.DeviceId)
 		c.SetSessionCache("userAgent", ua)

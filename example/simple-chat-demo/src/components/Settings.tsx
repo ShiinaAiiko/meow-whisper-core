@@ -21,13 +21,7 @@ import { alert, snackbar } from '@saki-ui/core'
 import { storage } from '../store/storage'
 import { useTranslation } from 'react-i18next'
 
-const SettingsComponent = ({
-	visible,
-	onClose,
-}: {
-	visible: boolean
-	onClose: () => void
-}) => {
+const SettingsComponent = () => {
 	const { t, i18n } = useTranslation('settings')
 	const config = useSelector((state: RootState) => state.config)
 
@@ -43,24 +37,29 @@ const SettingsComponent = ({
 				setShowItemPage(true)
 			}
 		} else {
+			if (config.deviceType !== 'Mobile') {
+        dispatch(configSlice.actions.setSettingType('Account'))
+			}
 		}
 		// setMenuType(type || 'Account')
-	}, [config.pageConfig.settingPage.settingType])
+	}, [config.pageConfig.settingPage.visible])
 
-	useEffect(() => {
-		if (
-			config.platform !== 'Electron' &&
-			config.pageConfig.settingPage.settingType === 'General'
-		) {
-			store.dispatch(configSlice.actions.setSettingType('Language'))
-		}
-	}, [config.platform, config.pageConfig.settingPage.settingType])
+	// useEffect(() => {
+	// 	if (
+	// 		config.platform !== 'Electron' &&
+	// 		config.pageConfig.settingPage.settingType === 'General'
+	// 	) {
+	// 		dispatch(configSlice.actions.setSettingType('Language'))
+	// 	}
+	// }, [config.platform, config.pageConfig.settingPage.settingType])
 
 	return (
 		<saki-modal
 			ref={bindEvent({
 				close() {
-					onClose?.()
+					// onClose?.()
+					dispatch(configSlice.actions.setSettingType(''))
+					dispatch(configSlice.actions.setSettingVisible(false))
 				},
 			})}
 			width='100%'
@@ -72,7 +71,7 @@ const SettingsComponent = ({
 			border={config.deviceType === 'Mobile' ? 'none' : ''}
 			mask-closable='false'
 			background-color='#fff'
-			visible={visible}
+			visible={config.pageConfig.settingPage.visible}
 		>
 			<div className={'settings-component ' + config.deviceType}>
 				<div className='settings-header'>
@@ -82,7 +81,8 @@ const SettingsComponent = ({
 						close-icon={closeIcon}
 						ref={bindEvent({
 							close() {
-								onClose?.()
+								// onClose?.()
+								dispatch(configSlice.actions.setSettingVisible(false))
 							},
 							back() {
 								console.log('back')
@@ -388,6 +388,7 @@ const Account = ({ show }: { show: boolean }) => {
 							width='80px'
 							height='80px'
 							border-radius='50%'
+							nickname={userInfo.nickname}
 							src={userInfo.avatar}
 						></saki-avatar>
 						<div className='s-a-p-nickname'>{userInfo.nickname}</div>

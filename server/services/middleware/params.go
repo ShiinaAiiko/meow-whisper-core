@@ -47,6 +47,8 @@ func Params() gin.HandlerFunc {
 				c.Abort()
 				return
 			}
+			// log.Info("dataProto.DeviceId", dataProto.DeviceId)
+			// log.Info("dataProto.DeviceId", len(data), len(dataProto.Data))
 			c.Set("data", dataProto.Data)
 			c.Set("token", dataProto.Token)
 			c.Set("deviceId", dataProto.DeviceId)

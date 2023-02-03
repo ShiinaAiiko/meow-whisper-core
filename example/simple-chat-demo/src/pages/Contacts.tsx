@@ -98,7 +98,7 @@ const ContactsPage = ({ children }: RouterProps) => {
 										type='AddUser'
 										margin='1px 0 0 0'
 									></saki-icon>
-									<span className='name'>Add Contact or Group</span>
+									<span className='name'>Add Contact</span>
 								</div>
 							</saki-button>
 							<div slot='main'>
@@ -253,10 +253,8 @@ const ContactsPage = ({ children }: RouterProps) => {
 																					type: 'Contact',
 																					id: v.userInfo?.uid || '',
 																					showMessageContainer: true,
-																					unreadMessageCount: -1,
-																					sort: Math.floor(
-																						new Date().getTime() / 1000
-																					),
+																					unreadMessageCount: -2,
+																					sort: -1,
 																				})
 																			)
 																			history?.('/chat')
@@ -347,7 +345,7 @@ const ContactsPage = ({ children }: RouterProps) => {
 																			})}
 																		>
 																			<saki-menu-item value='Delete'>
-																				Delete
+																				Delete contact
 																			</saki-menu-item>
 																		</saki-menu>
 																	</div>
@@ -419,6 +417,21 @@ const ContactsPage = ({ children }: RouterProps) => {
 																</saki-button>
 
 																<saki-button
+																	ref={bindEvent({
+																		tap: () => {
+																			dispatch(
+																				methods.messages.setChatDialogue({
+																					roomId: v.id || '',
+																					type: 'Group',
+																					id: v.id || '',
+																					showMessageContainer: true,
+																					unreadMessageCount: -2,
+																					sort: -1,
+																				})
+																			)
+																			history?.('/chat')
+																		},
+																	})}
 																	margin={'0 0 0 6px'}
 																	type='CircleIconGrayHover'
 																>
@@ -464,29 +477,27 @@ const ContactsPage = ({ children }: RouterProps) => {
 																		<saki-menu
 																			ref={bindEvent({
 																				selectvalue: async (e) => {
-																					const f = contacts.list.filter(
-																						(v) =>
-																							v.id === openContactMoreDownMenuId
-																					)?.[0]
-																					const u = f?.users?.filter((v) => {
-																						return v.uid !== user.userInfo.uid
-																					})?.[0]?.userInfo
-																					if (f && u) {
-																						console.log(e, f, u)
-																						switch (e.detail.value) {
-																							case 'Delete':
+																					switch (e.detail.value) {
+																						case 'Delete':
+																							if (
+																								v.authorId === user.userInfo.uid
+																							) {
 																								dispatch(
-																									methods.contacts.deleteContact(
-																										{
-																											uid: String(u.uid),
-																										}
-																									)
+																									methods.group.disbandGroup({
+																										groupId: v.id || '',
+																									})
 																								)
-																								break
+																							} else {
+																								dispatch(
+																									methods.group.leaveGroup({
+																										groupId: v.id || '',
+																									})
+																								)
+																							}
+																							break
 
-																							default:
-																								break
-																						}
+																						default:
+																							break
 																					}
 
 																					setOpenContactMoreDownMenuId('')
@@ -494,7 +505,9 @@ const ContactsPage = ({ children }: RouterProps) => {
 																			})}
 																		>
 																			<saki-menu-item value='Delete'>
-																				Delete
+																				{v.authorId === user.userInfo.uid
+																					? 'Disband group'
+																					: 'Leave group'}
 																			</saki-menu-item>
 																		</saki-menu>
 																	</div>

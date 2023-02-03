@@ -58,7 +58,8 @@ const GroupInfoComponent = () => {
 
 	const getMembers = async () => {
 		// if (members?.length !== 0) return
-		setMembersLoading('loading')
+    setMembersLoading('loading')
+    // 要改store里的
 		const res = await mwc.sdk?.api.group.getGroupMembers({
 			groupId: config.modal.groupId,
 		})

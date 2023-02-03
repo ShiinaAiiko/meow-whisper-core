@@ -128,6 +128,10 @@ export const userMethods = {
 			storage.global.setSync('deviceId', deviceId)
 			storage.global.setSync('userInfo', userInfo)
 
+			mwc.cache.userInfo?.set(userInfo?.uid || '', {
+				userInfo: userInfo,
+			})
+
 			mwc.sdk?.setToken(token)
 			mwc.sdk?.setDeviceId(deviceId)
 

@@ -376,7 +376,6 @@ func (fc *ContactController) GetContactList(c *gin.Context) {
 						copier.Copy(sUser, gv)
 						sUser.Letter = nstrings.GetLetter(sUser.Nickname)
 						// log.Info("sUser", sUser.LastSeenTime)
-						sUser.Nickname = "aaa"
 						sv.UserInfo = sUser
 						break
 					}

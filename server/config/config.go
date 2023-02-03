@@ -8,12 +8,14 @@ import (
 	"github.com/ShiinaAiiko/meow-whisper-core/services/typings"
 
 	"github.com/cherrai/nyanyago-utils/nlog"
+	"github.com/cherrai/nyanyago-utils/saass"
 	sso "github.com/cherrai/saki-sso-go"
 )
 
 var (
 	Config  *typings.Config
 	SSO     *sso.SakiSSO
+	SAaSS   *saass.SAaSS
 	SSOList map[string]*sso.SakiSSO = map[string]*sso.SakiSSO{}
 	log                             = nlog.New()
 )

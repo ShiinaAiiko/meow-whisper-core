@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { RouterProps } from 'react-router-dom'
+import { RouterProps, useNavigate } from 'react-router-dom'
 import logo from '../logo.svg'
 import { Helmet } from 'react-helmet-async'
 import './Contacts.scss'
@@ -33,6 +33,7 @@ const SettingsPage = ({ children }: RouterProps) => {
 
 	const [password, setPassword] = useState('')
 	const [passwordError, setPasswordError] = useState('')
+  const history = useNavigate()
 
 	return (
 		<>
@@ -43,7 +44,23 @@ const SettingsPage = ({ children }: RouterProps) => {
 					})}
 				</title>
 			</Helmet>
-			<div className={'chat-page ' + config.deviceType}>
+			<div className={'settings-page ' + config.deviceType}>
+				<saki-page-header
+					ref={bindEvent({
+						back: () => {
+							history?.(-1)
+						},
+					})}
+					padding='0 10px'
+					left
+					center
+					right
+					back-icon
+					title-font-size='22px'
+					title='Settings'
+				>
+					<div slot='right'></div>
+				</saki-page-header>
 				<>Settings page</>
 			</div>
 		</>

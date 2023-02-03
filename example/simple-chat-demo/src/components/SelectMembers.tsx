@@ -20,13 +20,26 @@ import { validation } from '@nyanyajs/utils'
 import { protoRoot } from '../protos'
 import { FriendItem } from '../store/contacts'
 
+interface Member {
+	uid: string
+	avatar: string
+	nickname: string
+	bio: string
+	selected: boolean
+	lastSeenTime: string
+}
+
 const SelectMembersComponent = ({
+	title,
 	onCancel,
 	cancelButtonText = 'Back',
 	createButtonText = 'Add',
 	createButtonLoading,
 	onSelectMembers,
+	members,
 }: {
+	members: Member[]
+	title: string
 	cancelButtonText: string
 	createButtonText: string
 	createButtonLoading: boolean
@@ -46,35 +59,35 @@ const SelectMembersComponent = ({
 	const user = useSelector((state: RootState) => state.user)
 
 	const dispatch = useDispatch<AppDispatch>()
-
 	const [avatar, setAvatar] = useState<{ base64Url: string; blob: Blob }>()
 	const [keyword, setKeyword] = useState('')
 	const [isSelectMembers, setIsSelectMembers] = useState(true)
-	const [selectMembers, setSelectMember] = useState<FriendItem[]>([])
+	const [selectMembers, setSelectMember] = useState<Member[]>([])
 
 	const location = useLocation()
 	const history = useNavigate()
 
-	const [friendsMap, setFriendsMap] = useState<{
-		[k: string]: FriendItem
+	const [membersMap, setMembersMap] = useState<{
+		[k: string]: Member
 	}>({})
 
 	useEffect(() => {
 		let obj: {
-			[k: string]: FriendItem
+			[k: string]: Member
 		} = {}
-		contacts.list.forEach((v) => {
-			obj[String(v.id)] = v
+		members.forEach((v) => {
+			obj[v.uid] = v
 		})
-		setFriendsMap(obj)
-	}, [contacts.list])
+		setSelectMember(members.filter((v) => v.selected))
+		setMembersMap(obj)
+	}, [members])
 
 	// const selectMembers = () => {}
 
 	return (
 		<div className={'select-members-component ' + config.deviceType}>
 			<div className='ngd-title'>
-				<div className='title'>Add Members</div>
+				<div className='title'>{title}</div>
 				<div className='count'>({selectMembers.length})</div>
 			</div>
 
@@ -97,15 +110,17 @@ const SelectMembersComponent = ({
 					return (
 						<saki-chat-layout-contact-tag
 							key={i}
-							avatar-text={!v.userInfo?.avatar ? v?.userInfo?.nickname : ''}
-							nickname={v.userInfo?.nickname}
+							avatar-text={!v?.avatar ? v?.nickname : ''}
+							nickname={v?.nickname}
 							delete-icon
 							margin='0 6px 6px 0'
 							ref={bindEvent({
 								delete: () => {
 									console.log('delete')
 
-									setSelectMember(selectMembers.filter((sv) => sv.id !== v.id))
+									setSelectMember(
+										selectMembers.filter((sv) => sv.uid !== v.uid)
+									)
 								},
 							})}
 						></saki-chat-layout-contact-tag>
@@ -126,22 +141,23 @@ const SelectMembersComponent = ({
 									// 		return friendsMap[v]
 									// 	})
 									// )
+									console.log(membersMap)
 									setSelectMember(
 										e.detail.values.map((v: any) => {
-											return friendsMap[v]
+											return membersMap[v]
 										})
 									)
 								},
 							})}
-							value={selectMembers.map((v, i) => v.id).join(',')}
+							value={selectMembers.map((v, i) => v.uid).join(',')}
 							type='Checkbox'
 							flex-direction='Column'
 						>
-							{contacts.list
+							{members
 								.filter((v) => {
 									return (
-										String(v?.userInfo?.uid)?.indexOf(keyword) >= 0 ||
-										String(v?.userInfo?.nickname)?.indexOf(keyword) >= 0
+										String(v?.uid)?.indexOf(keyword) >= 0 ||
+										String(v?.nickname)?.indexOf(keyword) >= 0
 									)
 								})
 								.map((v, i) => {
@@ -150,23 +166,17 @@ const SelectMembersComponent = ({
 											margin='0'
 											padding='0 10px'
 											hover-background-color='#eee'
-											key={v.id}
-											// disabled={true}
-											value={v.id}
+											key={i}
+											disabled={v.selected}
+											value={v.uid}
 										>
 											<saki-chat-layout-contact-item
 												padding='0 10px 0 6px'
-												avatar-text={
-													!v.userInfo?.avatar ? v.userInfo?.nickname : ''
-												}
-												nickname={v.userInfo?.nickname}
+												avatar-text={!v?.avatar ? v?.nickname : ''}
+												nickname={v?.nickname}
 												nickname-font-size='14px'
 												hover-background-color='rgba(0,0,0,0)'
-												username={
-													(v?.lastSeenTime || 0) > 0
-														? 'last seen time ' + v?.lastSeenTime
-														: ''
-												}
+												username={v.bio}
 												display-icons-layout-width='auto'
 												last-seen-time={''}
 											></saki-chat-layout-contact-item>
@@ -198,7 +208,7 @@ const SelectMembersComponent = ({
 								selectMembers.map((v) => {
 									return {
 										type: 'Join',
-										uid: String(v.userInfo?.uid),
+										uid: String(v?.uid),
 									}
 								})
 							)

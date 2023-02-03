@@ -53,7 +53,13 @@ func (enc *EncryptionController) ExchangeKey(c *gin.Context) {
 	}
 
 	// 4、解密临时AESKey
+	// log.Info(len(c.GetString("data")))
+	// // log.Info("data.TempAESKey", data)
+	// log.Info("data.TempAESKey", data.RSAPublicKey)
+	// log.Info("data.TempAESKey", data.DHPublicKey)
+	// log.Info("data.TempAESKey", data.RSASign)
 	tempAesKey, err := conf.EncryptionClient.RsaKey.DecryptWithString(data.TempAESKey, nil)
+	log.Info(tempAesKey, err)
 	if err != nil {
 		res.Errors(err)
 		res.Code = 10007
@@ -73,6 +79,9 @@ func (enc *EncryptionController) ExchangeKey(c *gin.Context) {
 		res.Call(c)
 		return
 	}
+	// res.Code = 10007
+	// res.Call(c)
+	// return
 
 	// 6、解密客户端RSAPublicKey
 	rsaPublicKey, err := aes.DecryptWithString(data.RSAPublicKey, "")
@@ -203,7 +212,8 @@ func (enc *EncryptionController) ExchangeKey(c *gin.Context) {
 		UserAESKey:  aesKeyEnStr.HexEncodeToString(),
 		RSASign:     rsaSignEnStr.HexEncodeToString(),
 		DHPublicKey: dhKeyEnStr.HexEncodeToString(),
-		Deadline:    time.Now().Unix() + 60*30,
+		// Deadline:    time.Now().Unix() + 8,
+		Deadline: time.Now().Unix() + 60*30,
 	}
 
 	res.Data = protos.Encode(&responseData)
