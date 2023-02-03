@@ -28,48 +28,11 @@ var (
 
 func main() {
 	nlog.SetPrefixTemplate("[{{Timer}}] [{{Count}}] [{{Type}}] [{{File}}]@{{Name}}")
-	nlog.SetName("meow-whisper-core")
+	nlog.SetName("mwc")
 	// nlog.SetFullFileName(true)
 	nlog.SetFileNameLength(20)
 	nlog.SetTimeDigits(3)
 
-	// type User struct {
-	// 	Type     string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	// 	PageSize int64  `protobuf:"varint,2,opt,name=pageSize,proto3" json:"pageSize,omitempty"`
-	// 	PageNum  int64  `protobuf:"varint,3,opt,name=pageNum,proto3" json:"pageNum,omitempty"`
-	// }
-	// user := &User{"chronos", 1, 2}
-	// s := reflect.TypeOf(user).Elem()  //通过反射获取type定义
-	// v := reflect.ValueOf(user).Elem() //通过反射获取type定义
-
-	// fmt.Println(reflect.TypeOf(user))
-	// fmt.Println(reflect.TypeOf(user).Elem())
-	// fmt.Println(v)
-	// for i := 0; i < s.NumField(); i++ {
-	// 	fmt.Println("value", v.Field(i))
-	// 	fmt.Println(s.Field(i).Name)            //将tag输出出来
-	// 	fmt.Println(s.Field(i).Type)            //将tag输出出来
-	// 	fmt.Println(s.Field(i).Tag)             //将tag输出出来
-	// 	fmt.Println(s.Field(i).Tag.Get("json")) //将tag输出出来
-	// }
-
-	// friendLog := models.FriendsLog{
-	// 	FriendId: 1,
-	// 	AuthorId: 1,
-	// 	Remark:   "sasasasasasasasasasasasasasasasasasasasasasasasasasasasa",
-	// }
-	// // fmt.Println("friendLog", friendLog)
-	// err := friendLog.Default()
-	// Log.Error("errerrerrerrerrerr", err)
-	// return
-	// Log.Info("Test")
-	// Log.Error("=========Error=========")
-	// Log.Warn("=========Error=========")
-	// Log.Time("耗时")
-	// Log.TimeEnd("耗时")
-
-	// sfu
-	// encryption.Test()
 	// 正式代码
 	defer func() {
 		log.Info("=========Error=========")
@@ -86,7 +49,6 @@ func main() {
 			if os.Args[k+1] != "" {
 				configPath = os.Args[k+1]
 			}
-			break
 
 		}
 	}

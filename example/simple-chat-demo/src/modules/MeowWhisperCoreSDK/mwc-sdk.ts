@@ -181,11 +181,12 @@ export class MeowWhisperCoreSDK extends NEventListener<
 					// 没有完成加密
 					// const aesKey = store.state.storage.ws.getSync('ec-aesKey')
 					// const userKey = store.state.storage.ws.getSync('ec-userKey')
-
+					const urls = ['/encryption/exchangeKey', '/sso']
+					console.log('config.url', config.url)
 					let { aesKey, userKey } = await this.encryption.getAndInitAesKey(
-						config.url.indexOf('api/v1/encryption/exchangeKey') < 0
+						urls.filter((v) => config.url && config.url.indexOf(v) >= 0)
+							?.length === 0
 					)
-					// console.log('config.url', config.url)
 
 					// console.log(
 					// 	'ec-aesKey',

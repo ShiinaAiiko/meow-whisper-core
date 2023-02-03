@@ -14,7 +14,10 @@ RUN \
   # apk add git --repository http://mirrors.aliyun.com/alpine/v3.14/main/ && \
   apk update && \
   apk add git && \
-  apk add openssh 
+  apk add openssh  && \
+  apk add protoc && \
+  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest 
 
 COPY  .ssh/ \
   /root/.ssh/
@@ -27,23 +30,26 @@ COPY go.mod \
   /app/
 
 RUN \
+  chmod -R 600 /root/.ssh/id_rsa && \ 
   git config --global url."git@github.com:".insteadOf "https://github.com/" && \
   go mod download
 
 COPY . . 
 
 RUN \
+  cd ./protos_temp && \
+  protoc --go_out=../protos *.proto && \
+  cd .. && \
   go build -o meow-whisper main.go
 
 FROM alpine:3.10
 
-WORKDIR /app
+WORKDIR /
 
 COPY --from=BUILD_IMAGE \
   /app/meow-whisper \
-  /app/config.pro.json \
-  /app/
+  /
 
 EXPOSE 15310
 
-CMD ["./meow-whisper","--config","config.pro.json"]
+CMD ["./meow-whisper","--config","config.json"]

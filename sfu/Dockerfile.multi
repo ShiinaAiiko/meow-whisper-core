@@ -14,7 +14,7 @@ RUN \
   # apk add git --repository http://mirrors.aliyun.com/alpine/v3.14/main/ && \
   apk update && \
   apk add git && \
-  apk add openssh 
+  apk add openssh  
 
 COPY  .ssh/ \
   /root/.ssh/
@@ -27,6 +27,7 @@ COPY go.mod \
   /app/
 
 RUN \
+  chmod -R 600 /root/.ssh/id_rsa && \ 
   git config --global url."git@github.com:".insteadOf "https://github.com/" && \
   go mod download
 
@@ -41,9 +42,8 @@ WORKDIR /app
 
 COPY --from=BUILD_IMAGE \
   /app/meow-whisper-sfu \
-  /app/config.pro.json \
   /app/
 
 EXPOSE 15302 15303 3478
 
-CMD ["./meow-whisper-sfu","--config","config.pro.json"]
+CMD ["./meow-whisper-sfu","--config","config.json"]

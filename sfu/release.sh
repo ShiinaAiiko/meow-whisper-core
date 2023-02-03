@@ -2,6 +2,8 @@
 name="meow-whisper-sfu-server"
 port=(15302 15303 3478)
 branch="main"
+configFilePath="config.pro.json"
+DIR=$(cd $(dirname $0) && pwd)
 allowMethods=("stop gitpull protos dockerremove start dockerlogs")
 
 DIR=$(cd $(dirname $0) && pwd)
@@ -25,7 +27,7 @@ start() {
 
   echo "-> 正在准备相关资源"
   # 获取npm配置
-  DIR=$(cd $(dirname $0) && pwd)
+  cp -r ../protos $DIR/protos_temp
   cp -r ~/.ssh $DIR
   cp -r ~/.gitconfig $DIR
 
@@ -33,11 +35,18 @@ start() {
   docker build -t $name $(cat /etc/hosts | sed 's/^#.*//g' | grep '[0-9][0-9]' | tr "\t" " " | awk '{print "--add-host="$2":"$1 }' | tr '\n' ' ') . -f Dockerfile.multi
   rm -rf $DIR/.ssh
   rm -rf $DIR/.gitconfig
+  rm -rf $DIR/protos_temp
 
   echo "-> 准备运行Docker"
   docker stop $name
   docker rm $name
-  docker run --name=$name $(cat /etc/hosts | sed 's/^#.*//g' | grep '[0-9][0-9]' | tr "\t" " " | awk '{print "--add-host="$2":"$1 }' | tr '\n' ' ') -p $port:$port --restart=always -d $name
+  docker run \
+    -v $DIR/$configFilePath:/config.json \
+    --name=$name \
+    $(cat /etc/hosts | sed 's/^#.*//g' | grep '[0-9][0-9]' | tr "\t" " " | awk '{print "--add-host="$2":"$1 }' | tr '\n' ' ') \
+    -p $port:$port \
+    --restart=always \
+    -d $name
 }
 
 stop() {

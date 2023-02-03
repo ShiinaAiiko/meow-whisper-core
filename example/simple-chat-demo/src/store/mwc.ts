@@ -86,7 +86,7 @@ export const mwcMethods = {
 			},
 			storage: storage.global,
 			socketIoConfig: {
-				uri: meowWhisperCore.url,
+				uri: meowWhisperCore.nsocketio.url,
 				opts: config.socketIoConfig.opt,
 			},
 		})

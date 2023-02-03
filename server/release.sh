@@ -2,9 +2,10 @@
 name="meow-whisper-web-server"
 port=15310
 branch="main"
-allowMethods=("stop gitpull protos dockerremove start dockerlogs")
-
+# configFilePath="config.dev.json"
+configFilePath="config.pro.json"
 DIR=$(cd $(dirname $0) && pwd)
+allowMethods=("stop gitpull protos dockerremove start dockerlogs")
 
 gitpull() {
   echo "-> 正在拉取远程仓库"
@@ -24,8 +25,7 @@ start() {
   dockerremove
 
   echo "-> 正在准备相关资源"
-  # 获取npm配置
-  DIR=$(cd $(dirname $0) && pwd)
+  cp -r ../protos $DIR/protos_temp
   cp -r ~/.ssh $DIR
   cp -r ~/.gitconfig $DIR
 
@@ -33,22 +33,30 @@ start() {
   docker build -t $name $(cat /etc/hosts | sed 's/^#.*//g' | grep '[0-9][0-9]' | tr "\t" " " | awk '{print "--add-host="$2":"$1 }' | tr '\n' ' ') . -f Dockerfile.multi
   rm -rf $DIR/.ssh
   rm -rf $DIR/.gitconfig
+  rm -rf $DIR/protos_temp
 
   echo "-> 准备运行Docker"
   docker stop $name
   docker rm $name
-  docker run --name=$name $(cat /etc/hosts | sed 's/^#.*//g' | grep '[0-9][0-9]' | tr "\t" " " | awk '{print "--add-host="$2":"$1 }' | tr '\n' ' ') -p $port:$port --restart=always -d $name
+  docker run \
+    -v $DIR/$configFilePath:/config.json \
+    --name=$name \
+    $(cat /etc/hosts | sed 's/^#.*//g' | grep '[0-9][0-9]' | tr "\t" " " | awk '{print "--add-host="$2":"$1 }' | tr '\n' ' ') \
+    -p $port:$port \
+    --restart=always \
+    -d $name
 }
 
 stop() {
   docker stop $name
+  docker rm $name
 }
 
 protos() {
   echo "-> 准备编译Protobuf"
   cp -r ../protos $DIR/protos_temp
   cd ./protos_temp && protoc --go_out=../protos *.proto
-  
+
   rm -rf $DIR/protos_temp
 
   echo "-> 编译Protobuf成功"
