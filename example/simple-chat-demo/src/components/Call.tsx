@@ -31,19 +31,20 @@ import { deepCopy, QueueLoop } from '@nyanyajs/utils'
 import { meowWhisperCore } from '../config'
 
 let webrtc = {
-	url: 'ws://192.168.1.104:15302/ws',
+	// url: 'ws://192.168.1.104:15302/ws',
+  "url": "ws://sfu.aiiko.club/ws",
 	options: {
 		codec: 'vp8',
 		iceServers: [
 			{
-				urls: ['turn:192.168.1.104:3478'],
+				// urls: ['turn:192.168.1.104:3478'],
+				urls: ['turn:120.78.183.1:3478'],
 				username: 'pion',
 				credential: 'ion',
 			},
 		],
 	},
 }
-
 const CallComponent = () => {
 	const { t, i18n } = useTranslation('index-header')
 	const call = useSelector((state: RootState) => state.call)
