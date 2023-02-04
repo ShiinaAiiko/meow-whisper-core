@@ -10,30 +10,43 @@ import {
 	ClientInfo,
 } from './types'
 import { QueueLoop } from '@nyanyajs/utils'
+import { SFUSignal } from './signal'
 
-class Wait {
-	private status = 0
-	private handlers: (() => void)[] = []
-	async waiting() {
+export class Wait {
+	private handlers: {
+		[k: string]: {
+			fl: (() => void)[]
+			status: number
+		}
+	} = {}
+	async waiting(key: string = 'wait') {
 		return new Promise((res) => {
-			console.log('Wait', this.status)
-			if (this.status === 1) {
+			!this.handlers[key] &&
+				(this.handlers[key] = {
+					status: 0,
+					fl: [],
+				})
+			if (this.handlers[key].status === 1) {
 				res(undefined)
 				return
 			}
-			this.handlers.push(() => {
+			this.handlers[key].fl.push(() => {
 				res(undefined)
 			})
 		})
 	}
-	dispatch() {
+	dispatch(key: string = 'wait') {
+		!this.handlers[key] &&
+			(this.handlers[key] = {
+				status: 0,
+				fl: [],
+			})
 		console.log(this.handlers)
-		this.status = 1
-		this.handlers.forEach((v) => {
+		this.handlers[key].status = 1
+		this.handlers[key].fl.forEach((v) => {
 			v()
 		})
-		this.handlers = []
-		console.log('Wait', this.status)
+		this.handlers[key].fl = []
 	}
 }
 
@@ -113,18 +126,23 @@ export class SFUClient extends EventTarget {
 		[type: string]: Ion.Constraints
 	} = {}
 
+	private signal: SFUSignal
+
 	constructor({
+		s,
 		signal,
 		clientOption,
 		clientInfo,
 		onClose,
 	}: {
+		s: SFUSignal
 		clientOption?: Ion.Configuration
 		signal: IonSFUJSONRPCSignal
 		clientInfo: ClientInfo
 		onClose: () => void
 	}) {
 		super()
+		this.signal = s
 		this.s = signal
 		this.clientInfo = clientInfo
 		clientOption && (this.clientOption = clientOption)
@@ -494,30 +512,30 @@ export class SFUClient extends EventTarget {
 		return await LocalStream.getDisplayMedia(constraints)
 	}
 	private async join() {
-		return new Promise((res) => {
+		return new Promise(async (res) => {
 			console.log('sfu1  this.s.onopen', 1)
-			this.s.onopen = async () => {
-				console.log(
-					'sfu1  this.s.onopen',
-					2,
-					this.clientInfo.roomId,
-					md5(JSON.stringify(this.clientInfo) + 'nyanya')
-				)
-				this.c.join(
-					this.clientInfo.roomId,
-					md5(JSON.stringify(this.clientInfo) + 'nyanya')
-				)
-				console.log('sfu1  this.s.onopen', 3)
-				this.joinWait.dispatch()
-				res(undefined)
-			}
+			await this.signal.openWait.waiting()
+
+			console.log(
+				'sfu1  this.s.onopen',
+				2,
+				this.clientInfo.roomId,
+				md5(JSON.stringify(this.clientInfo) + 'nyanya')
+			)
+			await this.c.join(
+				this.clientInfo.roomId,
+				md5(JSON.stringify(this.clientInfo) + 'nyanya')
+			)
+			console.log('sfu1  this.s.onopen', 34)
+			this.joinWait.dispatch()
+			res(undefined)
 		})
 	}
 	public close() {
 		try {
 			Object.keys(this.streams).forEach((id) => {
 				this.unpublish(id)
-			})
+      })
 			this.c.leave()
 			this.c.close()
 			this.queueLoop.decreaseAll()

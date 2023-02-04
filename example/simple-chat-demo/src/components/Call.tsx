@@ -60,7 +60,8 @@ const CallComponent = () => {
 			if (!call.options.callToken) return
 
 			let webrtc = {
-				url: 'ws://120.78.183.1:7000/ws',
+				url: 'wss://sfu.aiiko.club/ws',
+				// url: 'ws://120.78.183.1:7000/ws',
 				// url: 'ws://120.78.183.1:15302/ws',
 				// url: 'ws://192.168.1.104:15302/ws',
 				// url: 'ws://192.168.204.129:15302/ws',
@@ -73,42 +74,43 @@ const CallComponent = () => {
 					iceServers: [
 						{
 							// urls: ['turn:192.168.1.104:3478'],
-							urls: [
-								'stun:stun.l.google.com:19302',
-								'stun:stun1.l.google.com:19302',
-								'stun:stun2.l.google.com:19302',
-								'stun:stun3.l.google.com:19302',
-								'stun:stun4.l.google.com:19302',
-							],
-							// urls: ['turn:120.78.183.1:3478'],
-							// username: 'pion',
-							// credential: 'ion',
+							// urls: [
+							// 	'stun:stun.l.google.com:19302',
+							// 	'stun:stun1.l.google.com:19302',
+							// 	'stun:stun2.l.google.com:19302',
+							// 	'stun:stun3.l.google.com:19302',
+							// 	'stun:stun4.l.google.com:19302',
+							// ],
+							// urls: ['turn:139.196.6.190:3478'],
+							urls: ['turn:120.78.183.1:3478'],
+							username: 'pion',
+							credential: 'ion',
 						},
 					],
 				},
 			}
-			if (!s) {
-				s = new SFUSignal(webrtc.url, {
-					token: call.options.callToken,
-					deviceId: user.deviceId,
+			// if (!s) {
+			s = new SFUSignal(webrtc.url, {
+				token: call.options.callToken,
+				deviceId: user.deviceId,
+				uid: user.userInfo.uid,
+				userAgent: user.userAgent,
+				userInfo: {
 					uid: user.userInfo.uid,
-					userAgent: user.userAgent,
-					userInfo: {
-						uid: user.userInfo.uid,
-						avatar: user.userInfo.avatar,
-						username: user.userInfo.nickname,
-						nickname: user.userInfo.nickname,
-					},
-					customData: {
-						appId: meowWhisperCore.appId,
-						uid: user.userInfo.uid,
-						roomId: call.options.roomId,
-					},
-				})
-				dispatch(callSlice.actions.setSignal(s))
+					avatar: user.userInfo.avatar,
+					username: user.userInfo.nickname,
+					nickname: user.userInfo.nickname,
+				},
+				customData: {
+					appId: meowWhisperCore.appId,
+					uid: user.userInfo.uid,
+					roomId: call.options.roomId,
+				},
+			})
+			dispatch(callSlice.actions.setSignal(s))
 
-				console.log('call', s)
-			}
+			console.log('call', s)
+			// }
 			const c = s.createClient(call.options.roomId, webrtc.options as any)
 			// const c = s.createClient('ion', webrtc.options as any)
 			console.log('使用的roomId：', call.options.roomId, webrtc.options as any)

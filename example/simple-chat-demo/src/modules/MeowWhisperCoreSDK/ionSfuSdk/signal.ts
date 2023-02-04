@@ -1,10 +1,9 @@
-import { SFUClient } from './client'
+import { SFUClient, Wait } from './client'
 import * as Ion from 'ion-sdk-js/lib/connector'
 import { IonSFUJSONRPCSignal } from 'ion-sdk-js/lib/signal/json-rpc-impl'
 import md5 from 'blueimp-md5'
 import { UserAgent, userAgent } from '@nyanyajs/utils/dist/userAgent'
 import { ClientInfo } from './types'
-
 
 export class SFUSignal {
 	signal?: IonSFUJSONRPCSignal
@@ -20,6 +19,7 @@ export class SFUSignal {
 	clients: {
 		[roomId: string]: SFUClient
 	} = {}
+	openWait = new Wait()
 	constructor(
 		uri: string,
 		{
@@ -59,11 +59,12 @@ export class SFUSignal {
 		this.userInfo = userInfo
 		this.customData = customData
 	}
-  private new() {
-    console.log("this.uri",this.uri)
+	private new() {
+		console.log('this.uri', this.uri)
 		this.signal = new IonSFUJSONRPCSignal(this.uri)
 		this.signal.onopen = async () => {
 			console.log('onopen')
+			this.openWait.dispatch()
 			// this.createDataChannel()
 		}
 		this.signal.onclose = async (e) => {
@@ -92,6 +93,7 @@ export class SFUSignal {
 			userAgent: this.userAgent,
 		}
 		this.clients[clientId] = new SFUClient({
+			s: this,
 			signal: this.signal,
 			clientOption: clientOption,
 			clientInfo: clientInfo,

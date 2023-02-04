@@ -343,7 +343,7 @@ export const callSlice = createSlice({
 			state.status = -2
 			state.time.currentTime = 0
 			state.time.startTime = 0
-			state.client?.close()
+			state.signal?.close()
 			state.streams = []
 		},
 
@@ -843,7 +843,7 @@ export const callMethods = {
 					default:
 						break
 				}
-				call.sound.play()
+				// call.sound.play()
 				callAlert = alert({
 					titleAvatar: info.userInfo?.avatar || '',
 					titleAvatarText: info.userInfo?.nickname || '',
