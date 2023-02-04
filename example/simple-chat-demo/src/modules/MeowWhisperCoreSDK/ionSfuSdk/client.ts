@@ -11,6 +11,32 @@ import {
 } from './types'
 import { QueueLoop } from '@nyanyajs/utils'
 
+class Wait {
+	private status = 0
+	private handlers: (() => void)[] = []
+	async waiting() {
+		return new Promise((res) => {
+			console.log('Wait', this.status)
+			if (this.status === 1) {
+				res(undefined)
+				return
+			}
+			this.handlers.push(() => {
+				res(undefined)
+			})
+		})
+	}
+	dispatch() {
+		console.log(this.handlers)
+		this.status = 1
+		this.handlers.forEach((v) => {
+			v()
+		})
+		this.handlers = []
+		console.log('Wait', this.status)
+	}
+}
+
 // import { formatConstraints, getMediaDevices } from './methods'
 
 // navigator.mediaDevices
@@ -23,7 +49,7 @@ export class SFUClient extends EventTarget {
 	public s: IonSFUJSONRPCSignal
 	public c: Client
 	public clientOption?: Ion.Configuration
-	public dc: RTCDataChannel
+	public dc?: RTCDataChannel
 	public clientInfo: ClientInfo
 	private routers: {
 		[eventName: string]: (data: DATAChannelRouterResponse) => void
@@ -56,6 +82,7 @@ export class SFUClient extends EventTarget {
 		[id: string]: SFUStream
 	} = {}
 
+	private joinWait = new Wait()
 	private DATAChannelInitStatus = false
 	private publishFunc?: () => void
 	private queueLoop: QueueLoop
@@ -100,30 +127,29 @@ export class SFUClient extends EventTarget {
 		super()
 		this.s = signal
 		this.clientInfo = clientInfo
-		this.clientOption && (this.clientOption = clientOption)
-		console.log('this.clientOption', this.clientOption)
+		clientOption && (this.clientOption = clientOption)
 		this.c = new Client(this.s, this.clientOption)
+		console.log('this.clientOption', this.clientOption, this.c)
 		this.onClose = onClose
-
 		// const connector = new Ion.Connector('url', 'token')
 		// const room = new Ion.Room(connector)
 		// room.onleave
-
 		this.queueLoop = new QueueLoop({
 			delayms: 1000,
 		})
 
-		this.join()
-		this.dc = this.createDataChannel()
+		this.init()
 
-		const { router, emit, to } = this.DataChannelAPI()
-
+		// setTimeout(() => {
+	}
+	async init() {
 		this.c.onerrnegotiate = (e) => {
 			console.log('sfu onerrnegotiate', e)
 		}
 		this.c.onactivelayer = (e) => {
 			console.log('sfu onactivelayer', e)
 		}
+
 		this.c.onspeaker = (e) => {
 			// console.log('sfu onspeaker', e)
 			Object.keys(this.streams).forEach((id) => {
@@ -135,6 +161,7 @@ export class SFUClient extends EventTarget {
 				this.streams[id].dispatchEvent(new Event('speaker'))
 			})
 		}
+
 		this.c.ondatachannel = (e) => {
 			// 这是对方的实例，通过这个可以直接发送给对方
 			const clientInfo: ClientInfo = JSON.parse(e.channel.label)
@@ -181,7 +208,8 @@ export class SFUClient extends EventTarget {
 			track: MediaStreamTrack,
 			remoteStream: RemoteStream
 		) => {
-			console.log('sfu ontrack', track, remoteStream)
+			console.log('sfu1 ontrack', track, remoteStream)
+			const { router, emit, to } = this.DataChannelAPI()
 
 			// track.onmute = (e) => {
 			// 	console.log('sfu onmute', e)
@@ -276,6 +304,12 @@ export class SFUClient extends EventTarget {
 				// })
 			}
 		}
+
+		await this.join()
+		// }, 1000)
+
+		await this.joinWait.waiting()
+		this.dc = this.createDataChannel()
 	}
 	private getRoomClientId(clientInfo: ClientInfo) {
 		// 当track没有了则关闭监听
@@ -354,6 +388,8 @@ export class SFUClient extends EventTarget {
 	): Promise<SFUStream> {
 		return new Promise(async (res, rej) => {
 			try {
+				await this.joinWait.waiting()
+
 				console.log('------sfu publishFunc------')
 				constraints = await this.formatConstraints(constraints)
 
@@ -457,11 +493,25 @@ export class SFUClient extends EventTarget {
 	public async getDisplayMedia(constraints?: Ion.Constraints) {
 		return await LocalStream.getDisplayMedia(constraints)
 	}
-	private join() {
-		this.c.join(
-			this.clientInfo.roomId,
-			md5(JSON.stringify(this.clientInfo) + 'nyanya')
-		)
+	private async join() {
+		return new Promise((res) => {
+			console.log('sfu1  this.s.onopen', 1)
+			this.s.onopen = async () => {
+				console.log(
+					'sfu1  this.s.onopen',
+					2,
+					this.clientInfo.roomId,
+					md5(JSON.stringify(this.clientInfo) + 'nyanya')
+				)
+				this.c.join(
+					this.clientInfo.roomId,
+					md5(JSON.stringify(this.clientInfo) + 'nyanya')
+				)
+				console.log('sfu1  this.s.onopen', 3)
+				this.joinWait.dispatch()
+				res(undefined)
+			}
+		})
 	}
 	public close() {
 		try {
@@ -841,6 +891,7 @@ export class SFUClient extends EventTarget {
 	private createDataChannel() {
 		const roomLabel: ClientInfo = this.clientInfo
 		var options = { ordered: true, maxRetransmits: 30 }
+		console.log('createDataChannel')
 		this.dc = this.c.createDataChannel(
 			JSON.stringify(
 				Object.assign(roomLabel, {
@@ -849,6 +900,7 @@ export class SFUClient extends EventTarget {
 			)
 			// options
 		)
+		console.log('createDataChannel', this.dc)
 		// this.dc.binaryType = 'arraybuffer'
 		this.DATAChannelInitStatus = true
 		const { router, emit, to } = this.DataChannelAPI()

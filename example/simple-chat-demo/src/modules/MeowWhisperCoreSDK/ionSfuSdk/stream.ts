@@ -95,7 +95,7 @@ export class SFUStream extends EventTarget {
 		const ls: any = this.stream
 		if (
 			this.type === 'Local' &&
-			this.sfuClient.dc.readyState === 'open' &&
+			this.sfuClient.dc?.readyState === 'open' &&
 			ls?.pc?.connectionState === 'connected'
 		) {
 			if (this.stream.getTracks().length) {

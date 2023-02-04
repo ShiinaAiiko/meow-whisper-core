@@ -5,6 +5,7 @@ import md5 from 'blueimp-md5'
 import { UserAgent, userAgent } from '@nyanyajs/utils/dist/userAgent'
 import { ClientInfo } from './types'
 
+
 export class SFUSignal {
 	signal?: IonSFUJSONRPCSignal
 	uri: string
@@ -39,6 +40,7 @@ export class SFUSignal {
 			}
 		}
 	) {
+		// this.uri = uri
 		this.uri =
 			uri +
 			'?token=' +
@@ -57,7 +59,8 @@ export class SFUSignal {
 		this.userInfo = userInfo
 		this.customData = customData
 	}
-	private new() {
+  private new() {
+    console.log("this.uri",this.uri)
 		this.signal = new IonSFUJSONRPCSignal(this.uri)
 		this.signal.onopen = async () => {
 			console.log('onopen')

@@ -30,22 +30,6 @@ import { getDialogueInfo } from '../modules/methods'
 import { deepCopy, QueueLoop } from '@nyanyajs/utils'
 import { meowWhisperCore } from '../config'
 
-let webrtc = {
-	url: 'ws://120.78.183.1:15302/ws',
-	// url: 'ws://192.168.1.104:15302/ws',
-	// "url": "wss://sfu.aiiko.club/ws",
-	options: {
-		codec: 'vp8',
-		iceServers: [
-			{
-				// urls: ['turn:192.168.1.104:3478'],
-				urls: ['turn:120.78.183.1:3478'],
-				username: 'pion',
-				credential: 'ion',
-			},
-		],
-	},
-}
 const CallComponent = () => {
 	const { t, i18n } = useTranslation('index-header')
 	const call = useSelector((state: RootState) => state.call)
@@ -75,6 +59,34 @@ const CallComponent = () => {
 
 			if (!call.options.callToken) return
 
+			let webrtc = {
+				url: 'ws://120.78.183.1:7000/ws',
+				// url: 'ws://120.78.183.1:15302/ws',
+				// url: 'ws://192.168.1.104:15302/ws',
+				// url: 'ws://192.168.204.129:15302/ws',
+				// url: 'ws://192.168.204.129:7000/ws',
+				// url: 'ws://192.168.204.129:7000/ws',
+
+				// "url": "wss://sfu.aiiko.club/ws",
+				options: {
+					codec: 'vp8',
+					iceServers: [
+						{
+							// urls: ['turn:192.168.1.104:3478'],
+							urls: [
+								'stun:stun.l.google.com:19302',
+								'stun:stun1.l.google.com:19302',
+								'stun:stun2.l.google.com:19302',
+								'stun:stun3.l.google.com:19302',
+								'stun:stun4.l.google.com:19302',
+							],
+							// urls: ['turn:120.78.183.1:3478'],
+							// username: 'pion',
+							// credential: 'ion',
+						},
+					],
+				},
+			}
 			if (!s) {
 				s = new SFUSignal(webrtc.url, {
 					token: call.options.callToken,
@@ -98,7 +110,8 @@ const CallComponent = () => {
 				console.log('call', s)
 			}
 			const c = s.createClient(call.options.roomId, webrtc.options as any)
-			console.log('使用的roomId：', call.options.roomId)
+			// const c = s.createClient('ion', webrtc.options as any)
+			console.log('使用的roomId：', call.options.roomId, webrtc.options as any)
 			dispatch(callSlice.actions.setClient(c))
 
 			const gmd = await c.getMediaDevices()
@@ -186,7 +199,7 @@ const CallComponent = () => {
 		if (call.enable) {
 			switch (call.status) {
 				case -1:
-					call.sound.play()
+					// call.sound.play()
 					break
 				case 0:
 					call.sound.stop()

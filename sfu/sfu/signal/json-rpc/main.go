@@ -2,20 +2,16 @@
 package jsonrpc
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
-	"net/url"
 	"os"
 	"strconv"
 
 	"github.com/ShiinaAiiko/meow-whisper-core/sfu-server/sfu/signal/json-rpc/server"
 	"github.com/cherrai/nyanyago-utils/nlog"
-	"github.com/cherrai/nyanyago-utils/nresponse"
 	sso "github.com/cherrai/saki-sso-go"
-	"github.com/go-resty/resty/v2"
 	"github.com/gorilla/websocket"
 	log "github.com/pion/ion-sfu/pkg/logger"
 	"github.com/pion/ion-sfu/pkg/middlewares/datachannel"
@@ -166,7 +162,7 @@ type CustomData struct {
 }
 
 func New(config sfu.Config, option NewOptions) {
-	request := resty.New()
+	// request := resty.New()
 	conf = config
 	addr = ":" + strconv.FormatInt(option.SfuPort, 10)
 	metricsAddr = ":" + strconv.FormatInt(option.MetricsPort, 10)
@@ -210,52 +206,52 @@ func New(config sfu.Config, option NewOptions) {
 			panic(err)
 		}
 		defer c.Close()
-		u, _ := url.Parse(r.URL.String())
-		values := u.Query()
+		// u, _ := url.Parse(r.URL.String())
+		// values := u.Query()
 
-		fmt.Println("------------------开始校验------------------")
-		fmt.Println(values.Get("token"), 11111)
+		// fmt.Println("------------------开始校验------------------")
+		// fmt.Println(values.Get("token"), 11111)
 
-		token := values.Get("token")
+		// token := values.Get("token")
 
-		var customData CustomData
-		err = json.Unmarshal([]byte(values.Get("customData")), &customData)
-		if err != nil {
-			fmt.Println("err: ", err)
-			c.Close()
-			return
-		}
-		// nlogger.Info(token, uid, customData)
-		if option.MeowWhisperCore.AppId != customData.AppId {
-			nlogger.Error("Connection failed, appid is incorrect.")
-			return
-		}
+		// var customData CustomData
+		// err = json.Unmarshal([]byte(values.Get("customData")), &customData)
+		// if err != nil {
+		// 	fmt.Println("err: ", err)
+		// 	c.Close()
+		// 	return
+		// }
+		// // nlogger.Info(token, uid, customData)
+		// if option.MeowWhisperCore.AppId != customData.AppId {
+		// 	nlogger.Error("Connection failed, appid is incorrect.")
+		// 	return
+		// }
 
-		res, err := request.R().SetFormData(map[string]string{
-			"appId":  option.MeowWhisperCore.AppId,
-			"appKey": option.MeowWhisperCore.AppKey,
-			"uid":    customData.Uid,
-			"roomId": customData.RoomId,
-			"token":  token,
-		}).Post(option.MeowWhisperCore.Url + "/api/v1/call/token/verify")
-		if err != nil {
-			nlogger.Error(err)
-			return
-		}
+		// res, err := request.R().SetFormData(map[string]string{
+		// 	"appId":  option.MeowWhisperCore.AppId,
+		// 	"appKey": option.MeowWhisperCore.AppKey,
+		// 	"uid":    customData.Uid,
+		// 	"roomId": customData.RoomId,
+		// 	"token":  token,
+		// }).Post(option.MeowWhisperCore.Url + "/api/v1/call/token/verify")
+		// if err != nil {
+		// 	nlogger.Error(err)
+		// 	return
+		// }
 
-		var m nresponse.NResponse
-		err = json.Unmarshal([]byte(res.Body()), &m)
-		if err != nil {
-			nlogger.Error("Unmarshal with error: %+v\n", err)
-			return
-		}
-		if m.Code != 200 {
-			nlogger.Error("Connection failed", m)
-			nlogger.Error("Parameter:", token, customData)
-			c.Close()
-			return
-		}
-		nlogger.Info("Connection succeeded")
+		// var m nresponse.NResponse
+		// err = json.Unmarshal([]byte(res.Body()), &m)
+		// if err != nil {
+		// 	nlogger.Error("Unmarshal with error: %+v\n", err)
+		// 	return
+		// }
+		// if m.Code != 200 {
+		// 	nlogger.Error("Connection failed", m)
+		// 	nlogger.Error("Parameter:", token, customData)
+		// 	c.Close()
+		// 	return
+		// }
+		// nlogger.Info("Connection succeeded")
 
 		// var userAgent sso.UserAgent
 		// err = json.Unmarshal([]byte(values.Get("userAgent")), &userAgent)
