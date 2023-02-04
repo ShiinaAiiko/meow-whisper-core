@@ -101,6 +101,7 @@ export class SFUClient extends EventTarget {
 		this.s = signal
 		this.clientInfo = clientInfo
 		this.clientOption && (this.clientOption = clientOption)
+		console.log('this.clientOption', this.clientOption)
 		this.c = new Client(this.s, this.clientOption)
 		this.onClose = onClose
 

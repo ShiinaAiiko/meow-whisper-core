@@ -31,8 +31,9 @@ import { deepCopy, QueueLoop } from '@nyanyajs/utils'
 import { meowWhisperCore } from '../config'
 
 let webrtc = {
+	url: 'ws://120.78.183.1:15302/ws',
 	// url: 'ws://192.168.1.104:15302/ws',
-  "url": "wss://sfu.aiiko.club/ws",
+	// "url": "wss://sfu.aiiko.club/ws",
 	options: {
 		codec: 'vp8',
 		iceServers: [
@@ -96,7 +97,7 @@ const CallComponent = () => {
 
 				console.log('call', s)
 			}
-			const c = s.createClient(call.options.roomId)
+			const c = s.createClient(call.options.roomId, webrtc.options as any)
 			console.log('使用的roomId：', call.options.roomId)
 			dispatch(callSlice.actions.setClient(c))
 
