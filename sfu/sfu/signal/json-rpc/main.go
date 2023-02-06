@@ -9,7 +9,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/ShiinaAiiko/meow-whisper-core/sfu-server/sfu/signal/json-rpc/server"
+	"github.com/ShiinaAiiko/meow-whisper-core/sfu/sfu/signal/json-rpc/server"
 	"github.com/cherrai/nyanyago-utils/nlog"
 	sso "github.com/cherrai/saki-sso-go"
 	"github.com/gorilla/websocket"
@@ -53,76 +53,6 @@ func showHelp() {
 	fmt.Println("      -h (show help info)")
 	fmt.Println("      -v {0-10} (verbosity level, default 0)")
 }
-
-func load() bool {
-	// _, err := os.Stat(file)
-	// if err != nil {
-	// 	return false
-	// }
-
-	// viper.SetConfigFile(file)
-	// // fmt.Println("file", file)
-	// viper.SetConfigType("toml")
-
-	// err = viper.ReadInConfig()
-	// if err != nil {
-	// 	logger.Error(err, "config file read failed", "file", file)
-	// 	return false
-	// }
-	// err = viper.GetViper().Unmarshal(&conf)
-	// // fmt.Println("conf", conf.Turn)
-	// // fmt.Println("conf", conf.Turn.Auth)
-	// // fmt.Println("conf", conf.WebRTC)
-	// // fmt.Println("conf", conf.WebRTC.ICEServers)
-
-	// if err != nil {
-	// 	logger.Error(err, "sfu config file loaded failed", "file", file)
-	// 	return false
-	// }
-
-	// if len(conf.WebRTC.ICEPortRange) > 2 {
-	// 	logger.Error(nil, "config file loaded failed. webrtc port must be [min,max]", "file", file)
-	// 	return false
-	// }
-
-	// if len(conf.WebRTC.ICEPortRange) != 0 && conf.WebRTC.ICEPortRange[1]-conf.WebRTC.ICEPortRange[0] < portRangeLimit {
-	// 	logger.Error(nil, "config file loaded failed. webrtc port must be [min, max] and max - min >= portRangeLimit", "file", file, "portRangeLimit", portRangeLimit)
-	// 	return false
-	// }
-
-	// if len(conf.Turn.PortRange) > 2 {
-	// 	logger.Error(nil, "config file loaded failed. turn port must be [min,max]", "file", file)
-	// 	return false
-	// }
-
-	// if logConfig.Config.V < 0 {
-	// 	logger.Error(nil, "Logger V-Level cannot be less than 0")
-	// 	return false
-	// }
-
-	// logger.V(0).Info("Config file loaded", "file", file)
-	return true
-}
-
-func parse() bool {
-	// flag.StringVar(&file, "c", "config.toml", "config file")
-	// flag.StringVar(&cert, "cert", "", "cert file")
-	// flag.StringVar(&key, "key", "", "key file")
-	// // flag.StringVar(&addr, "a", ":"+strconv.FormatInt(conf.SFU.Port, 10), "address to use")
-	// // flag.StringVar(&metricsAddr, "m", ":"+strconv.FormatInt(conf.Metrics.Port, 10), "merics to use")
-	// flag.IntVar(&verbosityLevel, "v", -1, "verbosity level, higher value - more logs")
-	// help := flag.Bool("h", false, "help info")
-	// flag.Parse()
-	if !load() {
-		return false
-	}
-
-	// if *help {
-	// 	return false
-	// }
-	return true
-}
-
 func startMetrics(addr string) {
 	// start metrics server
 	m := http.NewServeMux()
@@ -162,15 +92,10 @@ type CustomData struct {
 }
 
 func New(config sfu.Config, option NewOptions) {
-	// request := resty.New()
 	conf = config
 	addr = ":" + strconv.FormatInt(option.SfuPort, 10)
 	metricsAddr = ":" + strconv.FormatInt(option.MetricsPort, 10)
 
-	if !parse() {
-		showHelp()
-		os.Exit(-1)
-	}
 	// if config != (sfu.Config{}) {
 	// 	conf = config
 	// }
@@ -200,6 +125,7 @@ func New(config sfu.Config, option NewOptions) {
 		WriteBufferSize: 1024,
 	}
 
+	// request := resty.New()
 	http.Handle("/ws", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {

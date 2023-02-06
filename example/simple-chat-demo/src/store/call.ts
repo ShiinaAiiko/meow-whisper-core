@@ -52,6 +52,7 @@ const state: {
 			uid: string
 			caller: boolean
 		}[]
+		turnServer: protoRoot.message.ITurnServer
 	}
 	modal: {
 		showSmallWindow: boolean
@@ -107,6 +108,7 @@ const state: {
 		uid: '',
 		participatingUsers: [],
 		roomId: '',
+		turnServer: {},
 	},
 	mediaDevices: {
 		list: [],
@@ -333,6 +335,7 @@ export const callSlice = createSlice({
 				uid: '',
 				participatingUsers: [],
 				roomId: '',
+				turnServer: {},
 			}
 			state.enable = false
 			state.modal.showSmallWindow = false
@@ -776,13 +779,14 @@ export const callMethods = {
 			callToken: string
 			type: 'Audio' | 'Video' | 'ScreenShare'
 			participants: protoRoot.message.IMessagesCallParticipants[]
+			turnServer: protoRoot.message.ITurnServer
 		},
 		{
 			state: RootState
 		}
 	>(
 		modeName + '/startCalling',
-		async ({ roomId, callToken, type, participants }, thunkAPI) => {
+		async ({ roomId, callToken, type, turnServer, participants }, thunkAPI) => {
 			const { mwc, call, user, group, messages } = thunkAPI.getState()
 
 			if (callAlert || call.status === 0) {
@@ -873,6 +877,7 @@ export const callMethods = {
 											caller: v.caller || false,
 										}
 									}) || [],
+								turnServer,
 							})
 						)
 					},
@@ -893,6 +898,7 @@ export const callMethods = {
 								caller: v.caller || false,
 							}
 						}) || [],
+					turnServer,
 				})
 			)
 			// thunkAPI.dispatch(

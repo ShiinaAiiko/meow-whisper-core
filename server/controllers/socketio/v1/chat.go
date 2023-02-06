@@ -14,6 +14,7 @@ import (
 	"github.com/cherrai/nyanyago-utils/nstrings"
 	"github.com/cherrai/nyanyago-utils/validation"
 	sso "github.com/cherrai/saki-sso-go"
+	"github.com/pion/turn/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -402,14 +403,31 @@ func (cc *ChatController) StartCalling(e *nsocketio.EventInstance) error {
 		}
 	}
 
-	res.Code = 200
 	// fmt.Println(msgRes)
+	t := time.Duration(conf.Config.Turn.Auth.Duration) * time.Second
+
+	u, p, err := turn.GenerateLongTermCredentials(conf.Config.Turn.Auth.Secret, t)
+	if err != nil {
+		res.Error = err.Error()
+		res.Code = 10001
+		res.CallSocketIo(e)
+		return nil
+	}
+
+	res.Code = 200
 	res.Data = protos.Encode(&protos.StartCalling_Response{
 		Participants:  data.Participants,
 		RoomId:        data.RoomId,
 		Type:          data.Type,
 		CurrentUserId: authorId,
 		CallToken:     ck,
+		TurnServer: &protos.TurnServer{
+			Urls: []string{
+				conf.Config.Turn.Address,
+			},
+			Username:   u,
+			Credential: p,
+		},
 	})
 	res.CallSocketIo(e)
 

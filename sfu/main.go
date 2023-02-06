@@ -26,11 +26,6 @@ type Config struct {
 	Metrics struct {
 		Port int64 `mapstructure:"port"`
 	} `mapstructure:"metrics"`
-	Mhlsso struct {
-		AppId  string `mapstructure:"appId"`
-		AppKey string `mapstructure:"appKey"`
-		Host   string `mapstructure:"host"`
-	}
 	MeowWhisperCore struct {
 		AppId  string `mapstructure:"appId"`
 		AppKey string `mapstructure:"appKey"`
@@ -68,6 +63,7 @@ func load() bool {
 			file = args[index+1]
 		}
 	}
+
 	if file == "" {
 		return false
 	}

@@ -59,12 +59,13 @@ const CallComponent = () => {
 
 			if (!call.options.callToken) return
 
+      console.log("turnserver",call.options.turnServer)
 			let webrtc = {
-				url: 'wss://sfu.aiiko.club/ws',
+				// url: 'wss://sfu.aiiko.club/ws',
 				// url: 'ws://120.78.183.1:7000/ws',
 				// url: 'ws://120.78.183.1:15302/ws',
 				// url: 'ws://192.168.1.104:15302/ws',
-				// url: 'ws://192.168.204.129:15302/ws',
+				url: 'ws://192.168.204.129:15302/ws',
 				// url: 'ws://192.168.204.129:7000/ws',
 				// url: 'ws://192.168.204.129:7000/ws',
 
@@ -73,6 +74,7 @@ const CallComponent = () => {
 					codec: 'vp8',
 					iceServers: [
 						{
+							urls: ['turn:192.168.204.129:3478'],
 							// urls: ['turn:192.168.1.104:3478'],
 							// urls: [
 							// 	'stun:stun.l.google.com:19302',
@@ -82,8 +84,9 @@ const CallComponent = () => {
 							// 	'stun:stun4.l.google.com:19302',
 							// ],
 							// urls: ['turn:139.196.6.190:3478'],
-							urls: ['turn:120.78.183.1:3478'],
-							username: 'pion',
+							// urls: ['turn:turn.aiiko.club:3478'],
+              
+              username: 'pion',
 							credential: 'ion',
 						},
 					],

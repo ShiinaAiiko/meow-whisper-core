@@ -194,6 +194,7 @@ export const createSocketioRouter = {
 							callToken: res.data.callToken + '1' || '',
 							type: res.data.type as any,
 							participants: res.data.participants || [],
+							turnServer: res.data.turnServer || {},
 						})
 					)
 				}

@@ -220,6 +220,12 @@ message MessagesCallParticipants {
   bool caller = 2;
 }
 
+message TurnServer {
+  repeated string urls = 1;
+  string username = 2;
+  string credential = 3;
+}
+
 message StartCalling {
   message Request {
     string roomId = 1;
@@ -233,6 +239,7 @@ message StartCalling {
     // socket路由参数
     string currentUserId = 4;
     string callToken = 5;
+    TurnServer turnServer = 6;
   }
 }
 

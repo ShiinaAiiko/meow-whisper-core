@@ -10,6 +10,7 @@ type Config struct {
 	Mongodb          Mongodb
 	StaticUrlPrefix  string
 	AppList          []AppListItem
+	Turn             Turn
 }
 
 type Server struct {
@@ -57,4 +58,12 @@ type AppListItem struct {
 	AppId  string
 	AppKey string
 	Name   string
+}
+
+type Turn struct {
+	Address string
+	Auth    struct {
+		Secret   string
+		Duration int64
+	}
 }
