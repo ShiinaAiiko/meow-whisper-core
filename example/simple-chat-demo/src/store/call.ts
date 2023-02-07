@@ -190,6 +190,29 @@ export const callSlice = createSlice({
 		},
 		setSignal: (state, params: ActionParams<typeof state['signal']>) => {
 			state.signal = params.payload
+			if (state.signal) {
+				state.signal.on('open', () => {
+					console.log('setSignal open')
+				})
+				state.signal.on('error', (e) => {
+					console.log('setSignal error', e)
+				})
+				state.signal.on('close', (e) => {
+					const { call } = store.getState()
+          console.log('setSignalclose', e, call)
+          // 未接通就关闭的情况下
+					if (call.status === -1) {
+						snackbar({
+							message: '与通话服务器失去了联系',
+							autoHideDuration: 2000,
+							vertical: 'top',
+							horizontal: 'center',
+							backgroundColor: 'var(--saki-default-color)',
+							color: '#fff',
+						}).open()
+					}
+				})
+			}
 		},
 		setClient: (state, params: ActionParams<typeof state['client']>) => {
 			state.client = params.payload

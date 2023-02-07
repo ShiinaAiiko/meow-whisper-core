@@ -36,6 +36,9 @@ let meowWhisperCore = {
 	nsocketio: {
 		url: '',
 	},
+	webrtc: {
+		url: '',
+	},
 }
 
 let origin = window.location.origin

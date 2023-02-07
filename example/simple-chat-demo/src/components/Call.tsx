@@ -59,13 +59,13 @@ const CallComponent = () => {
 
 			if (!call.options.callToken) return
 
-      console.log("turnserver",call.options.turnServer)
+			console.log('turnserver', call.options.turnServer)
 			let webrtc = {
 				// url: 'wss://sfu.aiiko.club/ws',
 				// url: 'ws://120.78.183.1:7000/ws',
 				// url: 'ws://120.78.183.1:15302/ws',
 				// url: 'ws://192.168.1.104:15302/ws',
-				url: 'ws://192.168.204.129:15302/ws',
+				url: meowWhisperCore.webrtc.url,
 				// url: 'ws://192.168.204.129:7000/ws',
 				// url: 'ws://192.168.204.129:7000/ws',
 
@@ -74,20 +74,22 @@ const CallComponent = () => {
 					codec: 'vp8',
 					iceServers: [
 						{
-							urls: ['turn:192.168.204.129:3478'],
-							// urls: ['turn:192.168.1.104:3478'],
-							// urls: [
-							// 	'stun:stun.l.google.com:19302',
-							// 	'stun:stun1.l.google.com:19302',
-							// 	'stun:stun2.l.google.com:19302',
-							// 	'stun:stun3.l.google.com:19302',
-							// 	'stun:stun4.l.google.com:19302',
-							// ],
-							// urls: ['turn:139.196.6.190:3478'],
-							// urls: ['turn:turn.aiiko.club:3478'],
-              
-              username: 'pion',
-							credential: 'ion',
+							// credential: 'jqpG17SfnOR7+b+Ypo+WoR+cPqo=',
+							// urls: ['turn:192.168.204.129:3478'],
+							// username: '1675707374',
+							urls: call.options.turnServer.urls,
+							username: call.options.turnServer.username,
+							credential: call.options.turnServer.credential,
+							// // urls: ['turn:192.168.1.104:3478'],
+							// // urls: [
+							// // 	'stun:stun.l.google.com:19302',
+							// // 	'stun:stun1.l.google.com:19302',
+							// // 	'stun:stun2.l.google.com:19302',
+							// // 	'stun:stun3.l.google.com:19302',
+							// // 	'stun:stun4.l.google.com:19302',
+							// // ],
+							// // urls: ['turn:139.196.6.190:3478'],
+							// // urls: ['turn:turn.aiiko.club:3478'],
 						},
 					],
 				},

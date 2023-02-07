@@ -4,8 +4,9 @@ import { IonSFUJSONRPCSignal } from 'ion-sdk-js/lib/signal/json-rpc-impl'
 import md5 from 'blueimp-md5'
 import { UserAgent, userAgent } from '@nyanyajs/utils/dist/userAgent'
 import { ClientInfo } from './types'
+import { NEventListener } from '@nyanyajs/utils'
 
-export class SFUSignal {
+export class SFUSignal extends NEventListener<'open' | 'close' | 'error'> {
 	signal?: IonSFUJSONRPCSignal
 	uri: string
 	token: string
@@ -40,6 +41,7 @@ export class SFUSignal {
 			}
 		}
 	) {
+		super()
 		// this.uri = uri
 		this.uri =
 			uri +
@@ -62,16 +64,19 @@ export class SFUSignal {
 	private new() {
 		console.log('this.uri', this.uri)
 		this.signal = new IonSFUJSONRPCSignal(this.uri)
-		this.signal.onopen = async () => {
-			console.log('onopen')
+		this.signal.onopen = () => {
+			// console.log('onopen')
 			this.openWait.dispatch()
+			this.dispatch('open')
 			// this.createDataChannel()
 		}
-		this.signal.onclose = async (e) => {
-			console.log('onclose', e)
+		this.signal.onclose = (e) => {
+			// console.log('onclose', e)
+			this.dispatch('close', e)
 		}
-		this.signal.onerror = async (error) => {
-			console.log('onerror', error)
+		this.signal.onerror = (error) => {
+			// console.log('onerror', error)
+			this.dispatch('error', error)
 		}
 		return this.signal
 	}

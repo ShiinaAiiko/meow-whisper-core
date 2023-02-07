@@ -85,11 +85,6 @@ type NewOptions struct {
 	}
 }
 
-type CustomData struct {
-	AppId  string
-	Uid    string
-	RoomId string
-}
 
 func New(config sfu.Config, option NewOptions) {
 	conf = config

@@ -60,8 +60,8 @@ func (fc *CallController) VerifyCallToken(c *gin.Context) {
 	// fc20c5cc-c567-50e8-90fc-5a0eb1ed6316100000
 	v, err := conf.Redisdb.Get(rKey.GetKey(data.AppId + data.RoomId + data.Uid))
 
-	log.Info("v", v, err)
-	if err != nil {
+	log.Info("v", v, err, data.Token)
+	if err != nil || v.String() != data.Token {
 		res.Errors(err)
 		res.Code = 10203
 		res.Call(c)

@@ -191,7 +191,7 @@ export const createSocketioRouter = {
 					await store.dispatch(
 						methods.call.startCalling({
 							roomId: res.data.roomId || '',
-							callToken: res.data.callToken + '1' || '',
+							callToken: res.data.callToken || '',
 							type: res.data.type as any,
 							participants: res.data.participants || [],
 							turnServer: res.data.turnServer || {},
