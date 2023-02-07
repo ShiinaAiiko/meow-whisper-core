@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { RouterProps } from 'react-router-dom'
+import {
+	RouterProps,
+	useLocation,
+	useNavigate,
+	useSearchParams,
+} from 'react-router-dom'
 import logo from '../logo.svg'
 import { Helmet } from 'react-helmet-async'
 import './Index.scss'
@@ -36,11 +41,22 @@ const ChatPage = ({ children }: RouterProps) => {
 	const dialogContextMenuEl = useRef<any>()
 	const [dialogContextMenuIndex, setDialogContextMenuIndex] = useState(-1)
 
+	const navigate = useNavigate()
+	const [searchParams] = useSearchParams()
+
+	useEffect(() => {
+		if (searchParams.get('roomId')) {
+			navigate?.('/', {
+				replace: true,
+			})
+		}
+  }, [])
+  
 	useEffect(() => {
 		console.log('getRecentChatDialogueList', messages.recentChatDialogueList)
 		if (
 			messages.recentChatDialogueList.length > 0 &&
-			messages.activeRoomIndex < 0
+			!searchParams.get('roomId')
 		) {
 			// setTimeout(() => {
 			// 	setActiveRoomIndex(0)
@@ -54,6 +70,8 @@ const ChatPage = ({ children }: RouterProps) => {
 		// 未来可以存储到草稿箱
 		// setMessage('')
 	}
+
+
 	return (
 		<>
 			<Helmet>
@@ -69,7 +87,7 @@ const ChatPage = ({ children }: RouterProps) => {
 				<saki-chat-container
 					// box-shadow='0 0 10px rgba(0,0,0,0.1)'
 					device-type={config.deviceType}
-					message-page={messages.activeRoomIndex >= 0}
+					message-page={searchParams.get('roomId')}
 					class='cp-container'
 				>
 					<div className='cp-sidebar-header' slot='sidebar-header'>
@@ -139,6 +157,10 @@ const ChatPage = ({ children }: RouterProps) => {
 										ref={bindEvent({
 											tap: () => {
 												setActiveRoomIndex(i)
+
+												navigate?.('/?roomId=' + v.roomId, {
+													replace: !!searchParams.get('roomId'),
+												})
 											},
 											contextmenu: (e: any) => {
 												e.preventDefault()
@@ -151,7 +173,7 @@ const ChatPage = ({ children }: RouterProps) => {
 											},
 										})}
 										context-menu-active={dialogContextMenuIndex === i}
-										selected={i === messages.activeRoomIndex}
+										selected={v.roomId === searchParams.get('roomId')}
 										avatar-text={!info.avatar ? info.name : ''}
 										nickname={info.name}
 										avatar={info.avatar}
@@ -179,7 +201,7 @@ const ChatPage = ({ children }: RouterProps) => {
 							display:
 								config.deviceType === 'Mobile'
 									? 'none'
-									: messages.activeRoomIndex > -1
+									: searchParams.get('roomId')
 									? 'none'
 									: 'flex',
 						}}
@@ -197,7 +219,7 @@ const ChatPage = ({ children }: RouterProps) => {
 						style={{
 							width: '100%',
 							height: '100%',
-							display: messages.activeRoomIndex === -1 ? 'none' : 'block',
+							display: !searchParams.get('roomId') ? 'none' : 'block',
 						}}
 						slot='message-container'
 					>
@@ -208,7 +230,8 @@ const ChatPage = ({ children }: RouterProps) => {
 									visible={
 										!!(
 											v.showMessageContainer &&
-											messages.activeRoomIndex === i &&
+											v.roomId === searchParams.get('roomId') &&
+											// messages.activeRoomIndex === i &&
 											!messages.deleteDialogIds.includes(v?.roomId)
 										)
 									}

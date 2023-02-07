@@ -57,9 +57,9 @@ const ChatLayout = ({ children }: RouterProps) => {
 	const sso = useSelector((state: RootState) => state.sso)
 
 	const [expand, setExpand] = useState(false)
-	const history = useNavigate()
+	const navigate = useNavigate()
 	const location = useLocation()
-	const [params] = useSearchParams()
+	const [searchParams] = useSearchParams()
 
 	useEffect(() => {
 		debounce.increase(async () => {
@@ -195,10 +195,10 @@ const ChatLayout = ({ children }: RouterProps) => {
 					>
 						<saki-chat-layout
 							bottom-navigator={
-								location.pathname === '/chat' ||
+								location.pathname === '/' ||
 								location.pathname === '/contacts' ||
 								location.pathname === '/notifications'
-									? messages.activeRoomIndex < 0
+									? !searchParams.get('roomId')
 									: false
 							}
 							device-type={config.deviceType}
@@ -216,7 +216,7 @@ const ChatLayout = ({ children }: RouterProps) => {
 												dispatch(configSlice.actions.setSettingVisible(true))
 												return
 											}
-											history?.(e.detail.href)
+											navigate?.(e.detail.href)
 										},
 									})}
 									expand={expand}
@@ -267,7 +267,7 @@ const ChatLayout = ({ children }: RouterProps) => {
 											await storage.global.set('expand', e.detail)
 										},
 										change: async (e) => {
-											history?.(e.detail.href)
+											navigate?.(e.detail.href)
 										},
 									})}
 								>

@@ -4,11 +4,11 @@ port=15311
 version=1.0.1
 branch="main"
 # configFilePath="config.dev.json"
-webConfigFilePath="config.test.pro.json"
+webConfigFilePath="config.pro.web.json"
 electronConfigFilePath="config.pro.electron.json"
 registryUrl="https://registry.npmmirror.com/"
 DIR=$(cd $(dirname $0) && pwd)
-allowMethods=("el:icon el:install el:run el:build push run protos stop npmconfig install gitpull dockerremove start logs")
+allowMethods=("dockerlogs el:icon el:install el:run el:build push run protos stop npmconfig install gitpull dockerremove start logs")
 
 # yarn --registry https://registry.npmmirror.com/
 #  yarn add @nyanyajs/utils @saki-ui/core
@@ -51,7 +51,7 @@ start() {
   dockerremove
 
   echo "-> 正在准备相关资源"
-  cp -r ../protos $DIR/protos_temp
+  cp -r ../../protos $DIR/protos_temp
   cp -r ./$webConfigFilePath $DIR/config.pro.temp.json
   # 获取npm配置
   cp -r ~/.npmrc $DIR
@@ -178,6 +178,9 @@ el:run() {
   chmod a+x ./src/electron/el-build/*.AppImage
   # ./src/electron/el-build/*.AppImage
   ${appName}
+}
+dockerlogs() {
+  docker logs -f $name
 }
 
 main() {

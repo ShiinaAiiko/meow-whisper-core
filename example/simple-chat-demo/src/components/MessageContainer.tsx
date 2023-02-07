@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { bindEvent } from '../modules/bindEvent'
 
 import { useSelector, useDispatch } from 'react-redux'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import store, {
 	RootState,
 	AppDispatch,
@@ -97,8 +97,6 @@ const MessageContainerComponent = ({
 	const [createButtonLoading, setCreateButtonLoading] = useState(false)
 	const [selectMembers, setSelectMember] = useState<FriendItem[]>([])
 
-	const location = useLocation()
-	const history = useNavigate()
 	const messageMainScrollEl = useRef<any>()
 
 	const [inputbarToolDorpdown, setInputbarToolDorpdown] = useState(false)
@@ -108,6 +106,9 @@ const MessageContainerComponent = ({
 	const [message, setMessage] = useState('')
 
 	const [getMessageDebounce] = useState(new Debounce())
+
+	const navigate = useNavigate()
+	const [searchParams] = useSearchParams()
 
 	const openInfo = () => {
 		if (messages.activeRoomInfo?.type === 'Group') {
@@ -333,6 +334,10 @@ const MessageContainerComponent = ({
 									},
 									back: () => {
 										dispatch(methods.messages.setActiveRoomIndex(-1))
+
+										navigate?.('/', {
+											replace: true,
+										})
 									},
 								})}
 								back-icon={config.deviceType === 'Mobile'}
@@ -679,7 +684,7 @@ const MessageContainerComponent = ({
 														},
 														resend: () => {
 															console.log('resend', v.id, v.message)
-                              // resendMessageToServer
+															// resendMessageToServer
 															dispatch(methods.tools.developing())
 														},
 														tap: () => {
