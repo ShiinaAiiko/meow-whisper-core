@@ -1,0 +1,3 @@
+[submodule "meow-whisper-core-sfu"]
+	path = meow-whisper-core-sfu
+	url = https://github.com/ShiinaAiiko/meow-whisper-core-sfu
