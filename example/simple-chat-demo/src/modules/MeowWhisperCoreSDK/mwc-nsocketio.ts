@@ -43,6 +43,7 @@ type RouterEventName =
 	| 'router-startCallingMessage'
 	| 'router-hangupMessage'
 	| 'router-deleteMessages'
+	| 'router-receiveEditMessage'
 	| 'router-error'
 
 export type RouterType = {
@@ -51,6 +52,7 @@ export type RouterType = {
 	'router-startCallingMessage': ResponseData<protoRoot.message.StartCalling.IResponse>
 	'router-hangupMessage': ResponseData<protoRoot.message.Hangup.IResponse>
 	'router-deleteMessages': ResponseData<protoRoot.message.DeleteMessages.IResponse>
+	'router-receiveEditMessage': ResponseData<protoRoot.message.EditMessage.IResponse>
 }
 
 export class MSCnsocketio extends NEventListener<Status | RouterEventName> {
@@ -82,7 +84,7 @@ export class MSCnsocketio extends NEventListener<Status | RouterEventName> {
 				// const userKey = store.state.storage.ws.getSync('ec-userKey')
 
 				const { aesKey, userKey } = this.sdk.encryption.getAesKeySync()
-				// console.log(aesKey, userKey, !aesKey || !userKey)
+				console.log(aesKey, userKey, !aesKey || !userKey)
 				if (!aesKey || !userKey) {
 					if (this.sdk.userInfo.token) {
 						this.sdk.encryption.init()
@@ -130,6 +132,7 @@ export class MSCnsocketio extends NEventListener<Status | RouterEventName> {
 	}
 	private useResponse(response: { data: any; requestId: string }) {
 		if (this.sdk.encryptionApi) {
+			console.log(response)
 			let data = ResponseEncryptDataType.decode(
 				// Buffer.from(response.data.protobuf, 'utf-8')
 				new Uint8Array(Buffer.from(response.data, 'base64'))
@@ -258,6 +261,9 @@ export class MSCnsocketio extends NEventListener<Status | RouterEventName> {
 	disconnect() {
 		if (this.status !== 'connected') return
 		console.log('MSCnsocketio disconnect')
+		this.setStatus('disconnect')
+		this.client?.close()
+		this.client = undefined
 	}
 	createRouter() {
 		console.log('createRouter')
@@ -279,7 +285,7 @@ export class MSCnsocketio extends NEventListener<Status | RouterEventName> {
 							this.sdk.encryption.clear().then(async () => {
 								if (this.client?.manager?.opts.query) {
 									const query = await this.getQuery()
-                  if (typeof query === 'string') {
+									if (typeof query === 'string') {
 										return query
 									}
 									this.client.manager.opts.query = query
@@ -374,6 +380,19 @@ export class MSCnsocketio extends NEventListener<Status | RouterEventName> {
 						R<protoRoot.message.DeleteMessages.IResponse>(
 							this.useResponse(response) as any,
 							protoRoot.message.DeleteMessages.Response
+						)
+					)
+				},
+			})
+			.router({
+				eventName:
+					this.eventName[apiVersion].routeEventName['receiveEditMessage'],
+				func: (response) => {
+					this.dispatch(
+						'router-receiveEditMessage',
+						R<protoRoot.message.EditMessage.IResponse>(
+							this.useResponse(response) as any,
+							protoRoot.message.EditMessage.Response
 						)
 					)
 				},

@@ -330,6 +330,12 @@ export class MeowWhisperCoreSDK extends NEventListener<
 	setDeviceId(deviceId: string) {
 		this.userInfo.deviceId = deviceId
 	}
+	clear() {
+		this.setToken('')
+		this.setDeviceId('')
+		this.encryption.clear()
+		this.nsocketio.disconnect()
+	}
 	methods = {
 		formatSimpleAnonymousUserInfo: (
 			v: protoRoot.user.ISimpleAnonymousUserInfo | null | undefined
@@ -851,7 +857,7 @@ export class MeowWhisperCoreSDK extends NEventListener<
 				 * socketio api
 				 */
 				editMessage: async (data: protoRoot.message.EditMessage.IRequest) => {
-					const res = R<protoRoot.message.SendMessage.IResponse>(
+					const res = R<protoRoot.message.EditMessage.IResponse>(
 						(await this.nsocketio.client?.emit({
 							namespace: this.nsocketio.namespace[apiVersion].chat,
 							eventName:
@@ -1328,7 +1334,7 @@ export class MeowWhisperCoreSDK extends NEventListener<
 				const aesKey = this.storage.getSync('ec-aesKey')
 				const userKey = this.storage.getSync('ec-userKey')
 				const deadline = this.storage.getSync('ec-deadline')
-
+				console.log('getAndInitAesKey')
 				if (
 					!aesKey ||
 					!userKey ||

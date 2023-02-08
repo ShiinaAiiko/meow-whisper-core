@@ -97,6 +97,7 @@ export const eventName = {
 
 			// Message
 			receiveMessage: 'ReceiveMessage',
+			receiveEditMessage: 'ReceiveEditMessage',
 			// 通过messageId
 			readMessage: 'ReadMessage',
 			// 通过roomId

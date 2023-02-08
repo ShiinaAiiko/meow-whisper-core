@@ -88,7 +88,8 @@ const ChatLayout = ({ children }: RouterProps) => {
 
 	useEffect(() => {
 		const init = async () => {
-			if (user.isInit && user.isLogin) {
+      if (user.isInit && user.isLogin) {
+        console.log("user.isInit && user.isLogin")
 				// console.log(mwc.sdk)
 				await mwc.sdk?.encryption.init()
 				// await dispatch(methods.encryption.Init())
@@ -335,7 +336,8 @@ const ChatLayout = ({ children }: RouterProps) => {
 												dispatch(configSlice.actions.setSettingVisible(true))
 												return
 											}
-											navigate?.(e.detail.href)
+											location.pathname !== e.detail.href &&
+												navigate?.(e.detail.href)
 										},
 									})}
 									expand={expand}
@@ -343,11 +345,11 @@ const ChatLayout = ({ children }: RouterProps) => {
 									<div slot='top'>
 										<saki-chat-layout-side-navigator-menu-item
 											margin='0 0 12px 0'
-											active={location.pathname === '/chat'}
+											active={location.pathname === '/'}
 											icon-type={'Messages'}
 											name={'MESSAGES'}
 											count={config.count.messages}
-											href='/chat'
+											href='/'
 										></saki-chat-layout-side-navigator-menu-item>
 										<saki-chat-layout-side-navigator-menu-item
 											margin='0 0 12px 0'
@@ -386,16 +388,17 @@ const ChatLayout = ({ children }: RouterProps) => {
 											await storage.global.set('expand', e.detail)
 										},
 										change: async (e) => {
-											navigate?.(e.detail.href)
+											location.pathname !== e.detail.href &&
+												navigate?.(e.detail.href)
 										},
 									})}
 								>
 									<saki-chat-layout-bottom-navigator-item
-										active={location.pathname === '/chat'}
+										active={location.pathname === '/'}
 										icon-type={'Messages'}
 										name={'MESSAGES'}
 										count={config.count.messages}
-										href='/chat'
+										href='/'
 									></saki-chat-layout-bottom-navigator-item>
 									<saki-chat-layout-bottom-navigator-item
 										active={location.pathname === '/contacts'}

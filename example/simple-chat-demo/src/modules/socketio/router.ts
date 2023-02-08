@@ -75,6 +75,7 @@ export const createSocketioRouter = {
 							showMessageContainer: true,
 							unreadMessageCount: -1,
 							lastMessage: m,
+							lastMessageId: m?.id,
 							lastMessageTime: Math.floor(new Date().getTime() / 1000),
 							sort: Math.floor(new Date().getTime() / 1000),
 						})
@@ -247,6 +248,27 @@ export const createSocketioRouter = {
 							roomId: res.data.roomId || '',
 							messageIdList: res.data.messageIdList || [],
 							uid: res.data.uid || '',
+						})
+					)
+				}
+			}
+		)
+
+		mwc.sdk?.nsocketio.on<RouterType['router-receiveEditMessage']>(
+			'router-receiveEditMessage',
+			async (res) => {
+				console.log('router-receiveEditMessage', res)
+				if (res?.code === 200) {
+					const { mwc, messages, user, call } = store.getState()
+
+					store.dispatch(
+						messagesSlice.actions.setMessageItem({
+							roomId: res.data.message?.roomId || '',
+							messageId: res.data.message?.id || '',
+							value: {
+								...res.data.message,
+								status: 1,
+							},
 						})
 					)
 				}

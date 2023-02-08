@@ -684,8 +684,26 @@ const MessageContainerComponent = ({
 														},
 														resend: () => {
 															console.log('resend', v.id, v.message)
+
+															if (v.editing) {
+																selectReplyMessage &&
+																	setSelectReplyMessage(undefined)
+																setEditMessage(v)
+																setMessageRichText(v.message || '')
+																return
+															}
+															dispatch(
+																methods.messages.resendMessageToServer({
+																	messageId: v.id || '',
+																	roomId: roomId,
+																	storeOnlyLocally: true,
+																	message: {
+																		...v,
+																	},
+																})
+															)
 															// resendMessageToServer
-															dispatch(methods.tools.developing())
+															// dispatch(methods.tools.developing())
 														},
 														tap: () => {
 															if (enbalSelect) {

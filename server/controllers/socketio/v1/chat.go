@@ -345,12 +345,21 @@ func (cc *ChatController) EditMessage(e *nsocketio.EventInstance) error {
 		res.CallSocketIo(e)
 		return err
 	}
-	responseData := protos.SendMessage_Response{
+	responseData := protos.EditMessage_Response{
 		Message: fMessage[0],
 	}
 	res.Code = 200
 	res.Data = protos.Encode(&responseData)
 	res.CallSocketIo(e)
+
+	msc := methods.SocketConn{
+		Conn: e.ConnContext(),
+	}
+
+	msc.BroadcastToRoom(data.RoomId,
+		routeEventName["receiveEditMessage"],
+		&res,
+		false)
 	return nil
 }
 

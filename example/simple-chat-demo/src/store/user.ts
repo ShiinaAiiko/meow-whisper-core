@@ -5,7 +5,13 @@ import {
 	configureStore,
 } from '@reduxjs/toolkit'
 import md5 from 'blueimp-md5'
-import store, { ActionParams, methods, storageSlice, RootState } from '.'
+import store, {
+	ActionParams,
+	methods,
+	storageSlice,
+	RootState,
+	mwcSlice,
+} from '.'
 import { UserAgent } from '@nyanyajs/utils/dist/userAgent'
 import nyanyajs from '@nyanyajs/utils'
 
@@ -137,7 +143,7 @@ export const userMethods = {
 
 			if (type === 'NewLogin') {
 				await mwc.sdk?.encryption.clear()
-				await mwc.sdk?.encryption.init()
+				// await mwc.sdk?.encryption.init()
 				thunkAPI.dispatch(userSlice.actions.setIsLogin(true))
 				thunkAPI.dispatch(methods.sso.GetAppToken())
 			}
@@ -190,8 +196,7 @@ export const userSlice = createSlice({
 			state.isLogin = false
 			setTimeout(() => {
 				const { mwc } = store.getState()
-				mwc.sdk?.setToken('')
-				mwc.sdk?.setDeviceId('')
+        mwc.sdk?.clear()
 				store.dispatch(storageSlice.actions.init(''))
 			})
 		},

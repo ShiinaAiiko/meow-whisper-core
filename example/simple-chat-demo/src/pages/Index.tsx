@@ -194,7 +194,7 @@ const ChatPage = ({ children }: RouterProps) => {
 								)
 							})}
 					</div>
-					<div slot='sidebar-footer'>SidebarFooter</div>
+					{/* <div slot='sidebar-footer'>SidebarFooter</div> */}
 					<div
 						className='m-none-page'
 						style={{

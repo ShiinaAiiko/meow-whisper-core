@@ -33,8 +33,9 @@ const SettingsComponent = () => {
 	useEffect(() => {
 		if (config.pageConfig.settingPage.settingType) {
 			if (config.deviceType === 'Mobile') {
-				setCloseIcon(false)
-				setShowItemPage(true)
+				setCloseIcon(true)
+				setShowItemPage(false)
+				dispatch(configSlice.actions.setSettingType(''))
 			}
 		} else {
 			if (config.deviceType !== 'Mobile') {

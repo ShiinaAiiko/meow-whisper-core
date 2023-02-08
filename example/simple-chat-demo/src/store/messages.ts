@@ -56,6 +56,7 @@ export interface ChatDialogueItem extends protoRoot.message.IChatDialogue {
 
 export interface MessageItem extends protoRoot.message.IMessages {
 	status: number
+	editing?: boolean
 }
 
 export interface MessagesMap {
@@ -205,6 +206,15 @@ export const messagesSlice = createSlice({
 				// console.log(v.id, messageId, value)
 				if (v.id === messageId) {
 					mv.list[i] = {
+						...value,
+					}
+					return true
+				}
+			})
+			state.recentChatDialogueList.some((v) => {
+				if (v.lastMessageId === messageId) {
+					v.lastMessage = {
+						...v.lastMessage,
 						...value,
 					}
 					return true
@@ -578,10 +588,12 @@ export const messagesMethods = {
 										messageId: mid,
 										roomId: roomId,
 										storeOnlyLocally: true,
-										image: {
-											url: url,
-											width: resizeData.width,
-											height: resizeData.height,
+										message: {
+											image: {
+												url: url,
+												width: resizeData.width,
+												height: resizeData.height,
+											},
 										},
 									})
 								)
@@ -647,9 +659,7 @@ export const messagesMethods = {
 		{
 			messageId: string
 			roomId: string
-			message?: string
-			call?: protoRoot.message.IMessagesCall
-			image?: protoRoot.message.IMessagesImage
+			message: protoRoot.message.SendMessage.IRequest
 			// 只发送到本地，暂不上传到网络
 			// storeOnlyServer?: boolean
 			storeOnlyLocally?: boolean
@@ -662,11 +672,9 @@ export const messagesMethods = {
 		modeName + '/resendMessageToServer',
 		async (
 			{
+				roomId,
 				messageId,
 				message,
-				roomId,
-				call,
-				image,
 				storeOnlyLocally,
 				onMessageSentSuccessfully,
 			},
@@ -679,8 +687,8 @@ export const messagesMethods = {
 				console.log('连接失败')
 				return
 			}
-			if (!call && !image) {
-				if (!message) {
+			if (!message?.call && !message?.image) {
+				if (!message?.message) {
 					console.log('未输入信息')
 					return
 				}
@@ -692,17 +700,14 @@ export const messagesMethods = {
 			let m = v.list.filter((v) => v.id === messageId)?.[0]
 			m = {
 				...m,
-				call: call ? call : m.call,
-				image: image ? image : m.image,
+				...message,
 			}
 
 			let params: protoRoot.message.SendMessage.IRequest = {
 				roomId,
 				type,
 				authorId: user.userInfo.uid,
-				message,
-				call: call ? call : m.call,
-				image: image ? image : m.image,
+				...message,
 			}
 			const res = await mwc.sdk?.api.message.sendMessage(params)
 			console.log('sendMessage', params, res)
@@ -726,6 +731,7 @@ export const messagesMethods = {
 						showMessageContainer: true,
 						unreadMessageCount: -2,
 						lastMessage: res.data.message,
+						lastMessageId: res.data.message?.id,
 						lastMessageTime: Math.floor(new Date().getTime() / 1000),
 						sort: Math.floor(new Date().getTime() / 1000),
 					})
@@ -863,7 +869,7 @@ export const messagesMethods = {
 					},
 					res
 				)
-				if (res?.code === 200 && res?.data?.message) {
+				if (res && res?.code === 200 && res?.data?.message) {
 					thunkAPI.dispatch(
 						messagesSlice.actions.setMessageItem({
 							roomId,
@@ -874,7 +880,6 @@ export const messagesMethods = {
 							},
 						})
 					)
-
 					await thunkAPI.dispatch(
 						methods.messages.setChatDialogue({
 							roomId,
@@ -883,6 +888,7 @@ export const messagesMethods = {
 							showMessageContainer: true,
 							unreadMessageCount: -2,
 							lastMessage: res.data.message,
+							lastMessageId: res.data.message?.id,
 							lastMessageTime: Math.floor(new Date().getTime() / 1000),
 							sort: Math.floor(new Date().getTime() / 1000),
 						})
@@ -1111,6 +1117,7 @@ export const messagesMethods = {
 								...v,
 								message,
 								status: 0,
+								editing: true,
 							},
 						})
 					)
@@ -1138,7 +1145,7 @@ export const messagesMethods = {
 					})
 				)
 			}
-			// thunkAPI.dispatch(messagesSlice.actions.setGetMessageStatus('GetSuccess'))
+			thunkAPI.dispatch(messagesSlice.actions.setGetMessageStatus('GetSuccess'))
 		}
 	),
 	clearHistory: createAsyncThunk<

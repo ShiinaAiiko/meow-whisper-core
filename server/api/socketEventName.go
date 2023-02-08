@@ -27,7 +27,8 @@ var EventName = map[string](map[string](map[string]string)){
 			"forceLeaveRoom": "ForceLeaveRoom",
 
 			// Message
-			"receiveMessage": "ReceiveMessage",
+			"receiveMessage":     "ReceiveMessage",
+			"receiveEditMessage": "ReceiveEditMessage",
 			// 通过messageId
 			"readMessage": "ReadMessage",
 			// 通过roomId
