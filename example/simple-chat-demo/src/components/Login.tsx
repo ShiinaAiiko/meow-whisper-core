@@ -42,10 +42,10 @@ const LoginComponent = () => {
 	// }, 1000)
 	return (
 		<saki-modal
-			max-width={config.deviceType === 'Mobile' ? 'auto' : '500px'}
-			min-width={config.deviceType === 'Mobile' ? 'auto' : '400px'}
-			max-height={config.deviceType === 'Mobile' ? 'auto' : '440px'}
-			min-height={config.deviceType === 'Mobile' ? 'auto' : '400px'}
+			max-width={config.deviceType === 'Mobile' ? '100%' : '500px'}
+			min-width={config.deviceType === 'Mobile' ? '100%' : '400px'}
+			max-height={config.deviceType === 'Mobile' ? '100%' : '440px'}
+			min-height={config.deviceType === 'Mobile' ? '100%' : '400px'}
 			width='100%'
 			height='100%'
 			border-radius={config.deviceType === 'Mobile' ? '0px' : ''}

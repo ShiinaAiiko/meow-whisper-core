@@ -86,8 +86,8 @@ const UserLoginPage = () => {
 					visible={config.general.openLoginUserDropDownMenu}
 					width='100%'
 					height='100%'
-					max-width={config.deviceType === 'Mobile' ? 'auto' : '420px'}
-					max-height={config.deviceType === 'Mobile' ? 'auto' : '420px'}
+					max-width={config.deviceType === 'Mobile' ? '100%' : '420px'}
+					max-height={config.deviceType === 'Mobile' ? '100%' : '420px'}
 					mask
 					border-radius={config.deviceType === 'Mobile' ? '0px' : ''}
 					border={config.deviceType === 'Mobile' ? 'none' : ''}

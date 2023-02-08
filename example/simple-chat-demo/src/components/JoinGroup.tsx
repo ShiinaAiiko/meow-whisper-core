@@ -64,8 +64,8 @@ const JoinGroupComponent = ({
 			visible={visible}
 			width='100%'
 			height='100%'
-			max-width={config.deviceType === 'Mobile' ? 'auto' : '420px'}
-			max-height={config.deviceType === 'Mobile' ? 'auto' : '180px'}
+			max-width={config.deviceType === 'Mobile' ? '100%' : '420px'}
+			max-height={config.deviceType === 'Mobile' ? '100%' : '180px'}
 			mask
 			border-radius={config.deviceType === 'Mobile' ? '0px' : ''}
 			border={config.deviceType === 'Mobile' ? 'none' : ''}

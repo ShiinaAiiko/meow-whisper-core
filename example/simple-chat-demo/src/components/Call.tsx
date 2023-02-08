@@ -322,8 +322,8 @@ const CallComponent = () => {
 				hide={call.modal.showSmallWindow}
 				width='100%'
 				height='100%'
-				max-width={config.deviceType === 'Mobile' ? 'auto' : '800px'}
-				max-height={config.deviceType === 'Mobile' ? 'auto' : '450px'}
+				max-width={config.deviceType === 'Mobile' ? '100%' : '800px'}
+				max-height={config.deviceType === 'Mobile' ? '100%' : '450px'}
 				mask
 				border-radius={config.deviceType === 'Mobile' ? '0px' : ''}
 				border={config.deviceType === 'Mobile' ? 'none' : ''}

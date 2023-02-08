@@ -111,6 +111,7 @@ function registerValidSW(swUrl: string, config?: Config) {
 
 function checkValidServiceWorker(swUrl: string, config?: Config) {
 	// Check if the service worker can be found. If it can't reload the page.
+  
 	fetch(swUrl, {
 		headers: { 'Service-Worker': 'script' },
 	})
@@ -145,7 +146,7 @@ export function unregister() {
 			.getRegistrations()
 			.then((registrations) => {
 				console.log('unregister', registrations)
-				for (let registration of registrations) {
+        for (let registration of registrations) {
 					registration.unregister()
 				}
 				// registration.unregister()

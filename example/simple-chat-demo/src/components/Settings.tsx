@@ -38,7 +38,7 @@ const SettingsComponent = () => {
 			}
 		} else {
 			if (config.deviceType !== 'Mobile') {
-        dispatch(configSlice.actions.setSettingType('Account'))
+				dispatch(configSlice.actions.setSettingType('Account'))
 			}
 		}
 		// setMenuType(type || 'Account')
@@ -64,8 +64,8 @@ const SettingsComponent = () => {
 			})}
 			width='100%'
 			height='100%'
-			max-width={config.deviceType === 'Mobile' ? 'auto' : '620px'}
-			max-height={config.deviceType === 'Mobile' ? 'auto' : '600px'}
+			max-width={config.deviceType === 'Mobile' ? '100%' : '620px'}
+			max-height={config.deviceType === 'Mobile' ? '100%' : '600px'}
 			mask
 			border-radius={config.deviceType === 'Mobile' ? '0px' : ''}
 			border={config.deviceType === 'Mobile' ? 'none' : ''}
@@ -476,12 +476,12 @@ const Account = ({ show }: { show: boolean }) => {
 
 			<div className='update-profile-component'>
 				<saki-modal
-					max-width={config.deviceType === 'Mobile' ? 'auto' : '800px'}
-					min-width={config.deviceType === 'Mobile' ? 'auto' : '700px'}
-					max-height={config.deviceType === 'Mobile' ? 'auto' : '600px'}
-					min-height={config.deviceType === 'Mobile' ? 'auto' : '400px'}
 					width='100%'
 					height='100%'
+					max-width={config.deviceType === 'Mobile' ? '100%' : '800px'}
+					min-width={config.deviceType === 'Mobile' ? '100%' : '700px'}
+					max-height={config.deviceType === 'Mobile' ? '100%' : '600px'}
+					min-height={config.deviceType === 'Mobile' ? '100%' : '400px'}
 					border-radius={config.deviceType === 'Mobile' ? '0px' : ''}
 					border={config.deviceType === 'Mobile' ? 'none' : ''}
 					mask

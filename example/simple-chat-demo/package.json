@@ -12,7 +12,7 @@
 		"dev": "cp -r ./config.test.json ./src/config.temp.json && npm run dc && BROWSER=none PORT=15311 react-app-rewired start  --allow-root",
 		"pro": "cp -r ./config.test.pro.json ./src/config.temp.json && npm run dc && BROWSER=none PORT=15311 react-app-rewired start  --allow-root",
 		"build": "react-app-rewired build",
-		"serve": "cp -r ./config.pro.web.json ./src/config.temp.json && yarn protos && yarn build && serve -l 15311 -s build",
+		"serve": "cp -r ../../protos ./protos_temp && cp -r ./config.pro.web.json ./src/config.temp.json && yarn protos && yarn build && serve -l 15311 -s build",
 		"build_to_el": "cross-env PUBLIC_URL=./ react-app-rewired build",
 		"test": "react-app-rewired test",
 		"eject": "react-app-rewired eject",
