@@ -19,6 +19,7 @@ let staticPathDomain = ''
 let networkTestUrl = ''
 
 let sakiui = {
+	url: '',
 	jsurl: '',
 	esmjsurl: '',
 }

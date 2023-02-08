@@ -36,6 +36,7 @@ import SettingsComponent from '../components/Settings'
 import { storage } from '../store/storage'
 import { bindEvent } from '@saki-ui/core'
 import md5 from 'blueimp-md5'
+import { sakiui } from '../config'
 // import parserFunc from 'ua-parser-js'
 
 const ChatLayout = ({ children }: RouterProps) => {
@@ -88,8 +89,8 @@ const ChatLayout = ({ children }: RouterProps) => {
 
 	useEffect(() => {
 		const init = async () => {
-      if (user.isInit && user.isLogin) {
-        console.log("user.isInit && user.isLogin")
+			if (user.isInit && user.isLogin) {
+				console.log('user.isInit && user.isLogin')
 				// console.log(mwc.sdk)
 				await mwc.sdk?.encryption.init()
 				// await dispatch(methods.encryption.Init())
@@ -195,6 +196,7 @@ const ChatLayout = ({ children }: RouterProps) => {
 				</title>
 			</Helmet>
 			<div className='chat-layout'>
+				<saki-base-style />
 				<Login />
 				<saki-init
 					ref={bindEvent({
@@ -213,80 +215,84 @@ const ChatLayout = ({ children }: RouterProps) => {
 					})}
 				></saki-init>
 
-				<div
-					onTransitionEnd={() => {
-						console.log('onTransitionEnd')
-						// setHideLoading(true)
-					}}
-					className={
-						'il-loading active ' +
-						// (!(appStatus.noteInitStatus && appStatus.sakiUIInitStatus)
-						// 	? 'active '
-						// 	: '') +
-						(hideLoading ? 'hide' : '')
-					}
-				>
-					{/* <div className='loading-animation'></div>
+				{!searchParams.get('noloading') ? (
+					<div
+						onTransitionEnd={() => {
+							console.log('onTransitionEnd')
+							// setHideLoading(true)
+						}}
+						className={
+							'il-loading active ' +
+							// (!(appStatus.noteInitStatus && appStatus.sakiUIInitStatus)
+							// 	? 'active '
+							// 	: '') +
+							(hideLoading ? 'hide' : '')
+						}
+					>
+						{/* <div className='loading-animation'></div>
 				<div className='loading-name'>
 					{t('appTitle', {
 						ns: 'common',
 					})}
 				</div> */}
-					<div className='loading-logo'>
-						<img src={config.origin + '/logo192.png'} alt='' />
-					</div>
-					{/* <div>progressBar, {progressBar}</div> */}
-					<div className='loading-progress-bar'>
-						<saki-linear-progress-bar
-							ref={bindEvent({
-								loaded: () => {
-									console.log('progress-bar', progressBar)
-									setProgressBar(0)
-									setTimeout(() => {
-										progressBar < 1 &&
-											setProgressBar(
-												progressBar + 0.2 >= 1 ? 1 : progressBar + 0.2
-											)
-									}, 0)
-									setLoadProgressBar(true)
-								},
-								transitionEnd: (e: CustomEvent) => {
-									console.log('progress-bar', e)
-									if (e.detail === 1) {
-										const el: HTMLDivElement | null =
-											document.querySelector('.il-loading')
-										if (el) {
-											const animation = el.animate(
-												[
+						<div className='loading-logo'>
+							<img src={config.origin + '/logo192.png'} alt='' />
+						</div>
+						{/* <div>progressBar, {progressBar}</div> */}
+						<div className='loading-progress-bar'>
+							<saki-linear-progress-bar
+								ref={bindEvent({
+									loaded: () => {
+										console.log('progress-bar', progressBar)
+										setProgressBar(0)
+										setTimeout(() => {
+											progressBar < 1 &&
+												setProgressBar(
+													progressBar + 0.2 >= 1 ? 1 : progressBar + 0.2
+												)
+										}, 0)
+										setLoadProgressBar(true)
+									},
+									transitionEnd: (e: CustomEvent) => {
+										console.log('progress-bar', e)
+										if (e.detail === 1) {
+											const el: HTMLDivElement | null =
+												document.querySelector('.il-loading')
+											if (el) {
+												const animation = el.animate(
+													[
+														{
+															opacity: 1,
+														},
+														{
+															opacity: 0,
+														},
+													],
 													{
-														opacity: 1,
-													},
-													{
-														opacity: 0,
-													},
-												],
-												{
-													duration: 500,
-													iterations: 1,
+														duration: 500,
+														iterations: 1,
+													}
+												)
+												animation.onfinish = () => {
+													el.style.display = 'none'
+													setHideLoading(true)
 												}
-											)
-											animation.onfinish = () => {
-												el.style.display = 'none'
-												setHideLoading(true)
 											}
 										}
-									}
-								},
-							})}
-							max-width='280px'
-							transition='width 1s'
-							width='100%'
-							height='10px'
-							progress={progressBar}
-							border-radius='5px'
-						></saki-linear-progress-bar>
+									},
+								})}
+								max-width='280px'
+								transition='width 1s'
+								width='100%'
+								height='10px'
+								progress={progressBar}
+								border-radius='5px'
+							></saki-linear-progress-bar>
+						</div>
 					</div>
-				</div>
+				) : (
+					''
+				)}
 				<>
 					<HeaderComponent></HeaderComponent>
 					{config.isConnectionError.mobile ? (

@@ -64,9 +64,10 @@ declare global {
 			'saki-call-floating': any
 			'saki-chat-bubble-file': any
 			'saki-chat-select': any
-      'saki-chat-reply': any
-      'saki-chat-edit': any
-      "saki-chat-bubble-reply":any
+			'saki-chat-reply': any
+			'saki-chat-edit': any
+			'saki-chat-bubble-reply': any
+			'saki-base-style': any
 		}
 	}
 	namespace Window {
