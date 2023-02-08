@@ -19,6 +19,7 @@ root.render(
 )
 
 
+serviceWorkerRegistration.unregister()
 serviceWorkerRegistration.register()
 // serviceWorkerRegistration.watchPush()
 // serviceWorkerRegistration.push()
