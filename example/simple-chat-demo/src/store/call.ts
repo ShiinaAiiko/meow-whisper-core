@@ -870,7 +870,7 @@ export const callMethods = {
 					default:
 						break
 				}
-				// call.sound.play()
+				call.sound.play()
 				callAlert = alert({
 					titleAvatar: info.userInfo?.avatar || '',
 					titleAvatarText: info.userInfo?.nickname || '',

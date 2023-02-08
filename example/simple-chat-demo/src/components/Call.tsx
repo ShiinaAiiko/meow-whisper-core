@@ -206,7 +206,7 @@ const CallComponent = () => {
 		if (call.enable) {
 			switch (call.status) {
 				case -1:
-					// call.sound.play()
+					call.sound.play()
 					break
 				case 0:
 					call.sound.stop()
