@@ -1,5 +1,6 @@
 import { protoRoot } from '../protos'
 import store from '../store'
+import qs from 'qs'
 
 export const getDialogueInfo = (v: any) => {
 	const { mwc } = store.getState()
@@ -25,4 +26,19 @@ export const getDialogueInfo = (v: any) => {
 		name: uinfo?.userInfo?.nickname || '',
 		bio: uinfo?.userInfo?.bio || '',
 	}
+}
+
+export const Query = (
+	query: {
+		[k: string]: string
+	},
+	searchParams: URLSearchParams
+) => {
+	let obj: {
+		[k: string]: string
+	} = {}
+	searchParams.forEach((v, k) => {
+		obj[k] = v
+	})
+	return '?' + qs.stringify(Object.assign(obj, query))
 }

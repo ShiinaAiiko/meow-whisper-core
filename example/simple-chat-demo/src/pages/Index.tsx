@@ -26,7 +26,7 @@ import { eventTarget } from '../store/config'
 import { contact } from '../protos/proto'
 import MessageContainerComponent from '../components/MessageContainer'
 import DeleteMessagesComponent from '../components/DeleteMessages'
-import { getDialogueInfo } from '../modules/methods'
+import { getDialogueInfo, Query } from '../modules/methods'
 
 const ChatPage = ({ children }: RouterProps) => {
 	const { t, i18n } = useTranslation('ChatPage')
@@ -46,12 +46,12 @@ const ChatPage = ({ children }: RouterProps) => {
 
 	useEffect(() => {
 		if (searchParams.get('roomId')) {
-			navigate?.('/', {
+			navigate?.('/' + Query({}, searchParams), {
 				replace: true,
 			})
 		}
-  }, [])
-  
+	}, [])
+
 	useEffect(() => {
 		console.log('getRecentChatDialogueList', messages.recentChatDialogueList)
 		if (
@@ -70,7 +70,6 @@ const ChatPage = ({ children }: RouterProps) => {
 		// 未来可以存储到草稿箱
 		// setMessage('')
 	}
-
 
 	return (
 		<>
@@ -158,9 +157,18 @@ const ChatPage = ({ children }: RouterProps) => {
 											tap: () => {
 												setActiveRoomIndex(i)
 
-												navigate?.('/?roomId=' + v.roomId, {
-													replace: !!searchParams.get('roomId'),
-												})
+												navigate?.(
+													'/' +
+														Query(
+															{
+																roomId: v.roomId,
+															},
+															searchParams
+														),
+													{
+														replace: !!searchParams.get('roomId'),
+													}
+												)
 											},
 											contextmenu: (e: any) => {
 												e.preventDefault()

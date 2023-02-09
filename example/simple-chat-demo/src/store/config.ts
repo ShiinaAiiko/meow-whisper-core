@@ -171,6 +171,14 @@ let call: {
 	showSmallWindow: false,
 }
 
+type Mode = 'dark' | 'light' | 'system'
+
+let appearance: {
+	mode: Mode
+} = {
+	mode: 'system',
+}
+
 let initialState = {
 	layout: {
 		backIcon: false,
@@ -243,6 +251,7 @@ let initialState = {
 		autoCloseWindowAfterCopy: false,
 		openLoginUserDropDownMenu: false,
 	},
+	appearance: appearance,
 	encryptionConfiguration: {
 		publicRsa: {
 			publicKey: '',
@@ -261,14 +270,18 @@ let initialState = {
 		contacts: 0,
 		notifications: 0,
 	},
-  inApp: false,
-  notification: {
-    enable:false,
-    // -1 关闭 0 离开后通知 1 实时通知
-    leval: 0,
-    // -1 关闭 0 离开后通知 1 实时通知
-    sound: 0,
-  }
+	inApp: false,
+	notification: {
+		enable: false,
+		// -1 关闭 0 离开后通知 1 实时通知
+		leval: 0,
+		// -1 关闭 0 离开后通知 1 实时通知
+		sound: 0,
+	},
+	dev: {
+		loading: false,
+		log: false,
+	},
 }
 
 export const configSlice = createSlice({
@@ -437,14 +450,35 @@ export const configSlice = createSlice({
 		setInApp: (state, params: ActionParams<typeof initialState['inApp']>) => {
 			state.inApp = params.payload
 		},
-		setNotificationEnable: (state, params: ActionParams<typeof initialState["notification"]["enable"]>) => {
+		setNotificationEnable: (
+			state,
+			params: ActionParams<typeof initialState['notification']['enable']>
+		) => {
 			state.notification.enable = params.payload
 		},
-		setNotificationLeval: (state, params: ActionParams<typeof initialState["notification"]["leval"]>) => {
+		setNotificationLeval: (
+			state,
+			params: ActionParams<typeof initialState['notification']['leval']>
+		) => {
 			state.notification.leval = params.payload
 		},
-		setNotificationSound: (state, params: ActionParams<typeof initialState["notification"]["sound"]>) => {
+		setNotificationSound: (
+			state,
+			params: ActionParams<typeof initialState['notification']['sound']>
+		) => {
 			state.notification.sound = params.payload
+		},
+		setAppearanceMode: (
+			state,
+			params: ActionParams<typeof initialState['appearance']['mode']>
+		) => {
+			state.appearance.mode = params.payload
+		},
+		setDev: (
+			state,
+			params: ActionParams<typeof initialState['dev']>
+		) => {
+			state.dev = params.payload
 		},
 	},
 })

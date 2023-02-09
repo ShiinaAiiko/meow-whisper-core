@@ -260,7 +260,7 @@ const SettingsNavList = ({
 					<span className='name'>{t('language')}</span>
 				</div>
 			</saki-menu-item>
-			<saki-menu-item
+			{/* <saki-menu-item
 				active={menuType === 'Appearance'}
 				padding='16px 12px'
 				value='Appearance'
@@ -286,8 +286,8 @@ const SettingsNavList = ({
 					</svg>
 					<span className='name'>{t('appearance')}</span>
 				</div>
-			</saki-menu-item>
-			<saki-menu-item
+			</saki-menu-item> */}
+			{/* <saki-menu-item
 				active={menuType === 'SyncAndBackup'}
 				padding='16px 12px'
 				value='SyncAndBackup'
@@ -309,7 +309,7 @@ const SettingsNavList = ({
 					</svg>
 					<span className='name'>{t('syncAndBackup')}</span>
 				</div>
-			</saki-menu-item>
+			</saki-menu-item> */}
 			<saki-menu-item
 				active={menuType === 'About'}
 				padding='16px 12px'
@@ -396,6 +396,10 @@ const Account = ({ show }: { show: boolean }) => {
 
 						<div className='s-a-p-item'>
 							<saki-card hide-title hide-subtitle>
+								<saki-card-item padding='10px 18px' disabled-tap>
+									<div slot='title'>Uid</div>
+									{userInfo.uid}
+								</saki-card-item>
 								<saki-card-item padding='10px 18px' disabled-tap>
 									<div slot='title'>Nickname</div>
 									{userInfo.nickname}
@@ -617,6 +621,7 @@ const Language = ({ show }: { show: boolean }) => {
 
 const Appearance = ({ show }: { show: boolean }) => {
 	const { t, i18n } = useTranslation('settings')
+	const config = useSelector((state: RootState) => state.config)
 
 	const dispatch = useDispatch<AppDispatch>()
 	return (
@@ -632,9 +637,10 @@ const Appearance = ({ show }: { show: boolean }) => {
 						ref={bindEvent({
 							async selectvalue(e) {
 								console.log(e.detail.value)
+								dispatch(configSlice.actions.setAppearanceMode(e.detail.value))
 							},
 						})}
-						value={'mode'}
+						value={config.appearance.mode}
 						flex-direction='Column'
 						type='Radio'
 					>
@@ -796,8 +802,7 @@ const About = ({ show }: { show: boolean }) => {
 						<saki-button
 							ref={bindEvent({
 								tap: () => {
-									let url =
-										'https://github.com/ShiinaAiiko/meow-sticky-note/releases'
+									let url = 'https://github.com/ShiinaAiiko/meow-whisper-core'
 									switch (config.platform) {
 										case 'Electron':
 											const { shell } = window.require('electron')

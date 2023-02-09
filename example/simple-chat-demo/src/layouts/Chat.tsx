@@ -37,6 +37,7 @@ import { storage } from '../store/storage'
 import { bindEvent } from '@saki-ui/core'
 import md5 from 'blueimp-md5'
 import { sakiui } from '../config'
+import { Query } from '../modules/methods'
 // import parserFunc from 'ua-parser-js'
 
 const ChatLayout = ({ children }: RouterProps) => {
@@ -186,6 +187,29 @@ const ChatLayout = ({ children }: RouterProps) => {
 		appStatus.sakiUIInitStatus,
 	])
 
+	useEffect(() => {
+		dispatch(
+			configSlice.actions.setDev({
+				loading: searchParams.get('loading') !== '0',
+				log: searchParams.get('log') === '1',
+			})
+		)
+	}, [location.pathname, location.search])
+
+	const [vConsole, setVConsole] = useState()
+	useEffect(() => {
+		if (config.dev.log && !vConsole) {
+			let script = document.createElement('script')
+			// script.src = "//cdn.jsdelivr.net/npm/eruda"
+			script.src = 'https://unpkg.com/vconsole@latest/dist/vconsole.min.js'
+			document.head.appendChild(script)
+			script.onload = function () {
+				const v = new (window as any).VConsole()
+				setVConsole(v)
+			}
+		}
+	}, [config.dev.log])
+
 	return (
 		<>
 			<Helmet>
@@ -196,7 +220,7 @@ const ChatLayout = ({ children }: RouterProps) => {
 				</title>
 			</Helmet>
 			<div className='chat-layout'>
-				<saki-base-style />
+				{/* <saki-base-style /> */}
 				<Login />
 				<saki-init
 					ref={bindEvent({
@@ -215,7 +239,7 @@ const ChatLayout = ({ children }: RouterProps) => {
 					})}
 				></saki-init>
 
-				{!searchParams.get('noloading') ? (
+				{config.dev.loading ? (
 					<div
 						onTransitionEnd={() => {
 							console.log('onTransitionEnd')
@@ -343,7 +367,7 @@ const ChatLayout = ({ children }: RouterProps) => {
 												return
 											}
 											location.pathname !== e.detail.href &&
-												navigate?.(e.detail.href)
+												navigate?.(e.detail.href + Query({}, searchParams))
 										},
 									})}
 									expand={expand}
@@ -395,7 +419,7 @@ const ChatLayout = ({ children }: RouterProps) => {
 										},
 										change: async (e) => {
 											location.pathname !== e.detail.href &&
-												navigate?.(e.detail.href)
+												navigate?.(e.detail.href + Query({}, searchParams))
 										},
 									})}
 								>

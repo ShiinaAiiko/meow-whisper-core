@@ -22,7 +22,7 @@ import { Debounce, validation } from '@nyanyajs/utils'
 import { protoRoot } from '../protos'
 import { FriendItem } from '../store/contacts'
 import SelectMembersComponent from './SelectMembers'
-import { getDialogueInfo } from '../modules/methods'
+import { getDialogueInfo, Query } from '../modules/methods'
 import md5 from 'blueimp-md5'
 import { MessageItem } from '../store/messages'
 
@@ -335,7 +335,7 @@ const MessageContainerComponent = ({
 									back: () => {
 										dispatch(methods.messages.setActiveRoomIndex(-1))
 
-										navigate?.('/', {
+										navigate?.('/' + Query({}, searchParams), {
 											replace: true,
 										})
 									},
