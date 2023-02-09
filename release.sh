@@ -6,8 +6,8 @@ DIR=$(cd $(dirname $0) && pwd)
 
 protos() {
   DIR=$(cd $(dirname $0) && pwd)
-  cd $DIR/server && bash ./release.sh protos
-  cd $DIR/example/simple-chat-demo && bash ./release.sh protos
+  cd $DIR/meow-whisper-core-server && bash ./release.sh protos
+  cd $DIR/example/meow-whisper-core-web-chat-demo && bash ./release.sh protos
 }
 
 main() {

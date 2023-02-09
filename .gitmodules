@@ -1,3 +1,9 @@
 [submodule "meow-whisper-core-sfu"]
 	path = meow-whisper-core-sfu
 	url = https://github.com/ShiinaAiiko/meow-whisper-core-sfu
+[submodule "example/meow-whisper-core-web-chat-demo"]
+	path = example/meow-whisper-core-web-chat-demo
+	url = git@github.com:ShiinaAiiko/meow-whisper-core-web-chat-demo.git
+[submodule "meow-whisper-core-server"]
+	path = meow-whisper-core-server
+	url = git@github.com:ShiinaAiiko/meow-whisper-core-server.git
