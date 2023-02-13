@@ -40,19 +40,20 @@ message RoomUserInfo {
   string bio = 7;
 }
 // 匿名用户信息
-message AnonymousUserInfo {
-  string AppId = 1;
-  string uid = 2;
-  string nickname = 3;
-  string avatar = 4;
-  string bio = 5;
-  string additionalInformation = 6;
-  int64 status = 7;
-  int64 createTime = 8;
-  int64 deleteTime = 9;
-}
-message SimpleAnonymousUserInfo {
+// message AnonymousUserInfo {
+//   string AppId = 1;
+//   string uid = 2;
+//   string nickname = 3;
+//   string avatar = 4;
+//   string bio = 5;
+//   string additionalInformation = 6;
+//   int64 status = 7;
+//   int64 createTime = 8;
+//   int64 deleteTime = 9;
+// }
+message SimpleSSOUserInfo {
   string uid = 1;
+  string username = 7;
   string nickname = 2;
   string avatar = 3;
   string bio = 4;
@@ -60,22 +61,28 @@ message SimpleAnonymousUserInfo {
   int64 lastSeenTime = 6;
 }
 message SSOUserInfo {
-  string id = 1;
-  int64 uid = 2;
-  string username = 3;
-  string nickname = 4;
-  string avatar = 5;
-  string city = 6;
+  string uid = 1;
+  string username = 2;
+  string email = 3;
+  string phone = 4;
+  string nickname = 5;
+  string avatar = 6;
   string bio = 7;
-  int64 gender = 8;
-  int64 status = 9;
-  string birthday = 11;
-  message BackgroundImage {
-    string src = 1;
-    int64 size = 2;
+  repeated string city = 8;
+  // -1 | 1 | 2 | 3 | 4 | 5
+  int64 gender = 9;
+  string birthday = 10;
+	// -1 | 0 | 1
+  int64 status = 11;
+  message AdditionalInformation {
   }
-  BackgroundImage backgroundImage = 12;
-  string createTime = 13;
+  AdditionalInformation additionalInformation = 12;
+  message AppData {
+  }
+  AppData appData = 13;
+  int64 creationTime = 14;
+  int64 lastUpdateTime = 15;
+  int64 lastSeenTime = 16;
 }
 
 message UpdateLoginUserProfile {
@@ -142,7 +149,7 @@ message UserAgent {
 }
 
 message OnlineDeviceList {
-  user.AnonymousUserInfo userInfo = 1;
+  user.SSOUserInfo userInfo = 1;
   int64 loginTime = 2;
   UserAgent userAgent = 3;
   string location = 4;

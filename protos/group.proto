@@ -14,7 +14,7 @@ message GroupMembers {
   string lastMessage = 8;
   int64 lastMessageTime = 7;
   // 仅获取列表的时候用
-  user.SimpleAnonymousUserInfo userInfo = 6;
+  user.SimpleSSOUserInfo userInfo = 6;
 }
 
 message Group {
@@ -85,7 +85,7 @@ message GetGroupMembers {
 message LeaveGroup {
   message Request {
     string groupId = 1;
-    string uid = 2;
+    repeated string uid = 2;
   }
   message Response {}
 }
@@ -93,7 +93,7 @@ message LeaveGroup {
 message JoinGroup {
   message Request {
     string groupId = 1;
-    string uid = 2;
+    repeated string uid = 2;
     string remark = 3;
   }
   message Response {
@@ -103,8 +103,16 @@ message JoinGroup {
 }
 
 message DisbandGroup {
-  message Request {
-    string groupId = 1;
-  }
+  message Request { string groupId = 1; }
   message Response {}
+}
+
+// socket router
+message UpdateGroupStatus {
+  message Response {
+    // type: New/Join/Disband/Leave
+    string type = 1;
+    string roomId = 2;
+    repeated string uid = 3;
+  }
 }
