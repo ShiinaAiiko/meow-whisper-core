@@ -37,6 +37,7 @@ message Group {
   int64 members = 11;
   int64 status = 6;
   int64 createTime = 7;
+  int64 lastUpdateTime = 12;
   string lastMessage = 10;
   int64 lastMessageTime = 8;
   // 登录了才有
@@ -58,6 +59,19 @@ message NewGroup {
   message Response {
     // Added/Waiting
     string type = 1;
+  }
+}
+
+message UpdateGroupInfo {
+  message Request {
+    string groupId = 1;
+    string name = 2;
+    string avatar = 3;
+  }
+  message Response {
+    string groupId = 1;
+    string name = 2;
+    string avatar = 3;
   }
 }
 

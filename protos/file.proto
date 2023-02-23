@@ -27,3 +27,22 @@ message GetUploadFileToken {
     repeated int64 uploadedOffset = 5;
   }
 }
+
+message GetCustomStickersUploadFileToken {
+  message Request {
+    int64 size = 1;
+    string hash = 2;
+  }
+  message Response {
+    FileUrls urls = 1;
+    string apiUrl = 2;
+    string token = 3;
+    int64 chunkSize = 4;
+    repeated int64 uploadedOffset = 5;
+  }
+}
+
+message GetCustomStickersFileUrl {
+  message Request {}
+  message Response { string url = 1; }
+}
