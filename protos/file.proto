@@ -13,7 +13,7 @@ message FileInfo {
 }
 message FileUrls {
   string domainUrl = 1;
-  string encryptionUrl = 2;
+  string shortUrl = 2;
   string url = 3;
 }
 
